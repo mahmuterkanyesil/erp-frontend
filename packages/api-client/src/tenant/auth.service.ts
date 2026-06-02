@@ -10,7 +10,11 @@ export const authService = {
       .then((r) => r.data),
 
   refresh: (body: RefreshTokenRequest): Promise<LoginResponse> =>
-    tenantHttp.post<LoginResponse>("/api/v1/auth/refresh", body).then((r) => r.data),
+    tenantHttp
+      .post<LoginResponse>("/api/v1/auth/refresh", body, {
+        headers: { "X-Tenant-ID": body.tenant_id },
+      })
+      .then((r) => r.data),
 
   getPermissions: (userId: string): Promise<string[]> =>
     tenantHttp
