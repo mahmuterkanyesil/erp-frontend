@@ -12,6 +12,7 @@ import {
   PermissionGate,
   FormSkeleton,
 } from "@erp/ui"
+import { useLocaleFormat } from "@erp/hooks"
 import {
   usePurchaseOrder,
   useConfirmOrder,
@@ -34,6 +35,7 @@ export function PurchaseOrderDetailPage() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [showCancel, setShowCancel] = useState(false)
 
+  const { formatDate } = useLocaleFormat()
   const { data: order, isLoading } = usePurchaseOrder(orderId)
   const { mutate: confirmOrder, isPending: isConfirming } = useConfirmOrder()
   const { mutate: cancelOrder, isPending: isCancelling } = useCancelOrder()
@@ -113,7 +115,7 @@ export function PurchaseOrderDetailPage() {
               {t("expectedDate")}
             </span>
             <span className="text-sm text-text-main-light dark:text-text-main-dark">
-              {new Date(order.expected_date).toLocaleDateString()}
+              {formatDate(order.expected_date)}
             </span>
           </div>
           <div className="flex flex-col gap-1">
