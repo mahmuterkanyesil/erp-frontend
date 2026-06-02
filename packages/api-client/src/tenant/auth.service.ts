@@ -3,7 +3,11 @@ import type { LoginRequest, LoginResponse, RefreshTokenRequest, PermissionsRespo
 
 export const authService = {
   login: (body: LoginRequest): Promise<LoginResponse> =>
-    tenantHttp.post<LoginResponse>("/api/v1/auth/login", body).then((r) => r.data),
+    tenantHttp
+      .post<LoginResponse>("/api/v1/auth/login", body, {
+        headers: { "X-Tenant-ID": body.tenant_id },
+      })
+      .then((r) => r.data),
 
   refresh: (body: RefreshTokenRequest): Promise<LoginResponse> =>
     tenantHttp.post<LoginResponse>("/api/v1/auth/refresh", body).then((r) => r.data),
