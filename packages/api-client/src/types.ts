@@ -210,7 +210,7 @@ export interface PurchaseOrder {
   warehouse_name?: string
   source: PurchaseSource
   status: PurchaseOrderStatus
-  expected_date: string
+  expected_at: string
   lines: PurchaseOrderLine[]
   total_amount: string
   currency: string
@@ -223,7 +223,7 @@ export interface CreatePurchaseOrderRequest {
   supplier_id: string
   warehouse_id: string
   source: PurchaseSource
-  expected_date: string
+  expected_at: string
   notes?: string
 }
 

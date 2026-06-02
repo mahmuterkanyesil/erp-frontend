@@ -115,7 +115,7 @@ export function PurchaseOrderDetailPage() {
               {t("expectedDate")}
             </span>
             <span className="text-sm text-text-main-light dark:text-text-main-dark">
-              {formatDate(order.expected_date)}
+              {formatDate(order.expected_at)}
             </span>
           </div>
           <div className="flex flex-col gap-1">

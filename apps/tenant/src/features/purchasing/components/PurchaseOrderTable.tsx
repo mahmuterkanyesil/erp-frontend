@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next"
 import { DataTable } from "@erp/ui"
 import type { Column } from "@erp/ui"
 import type { PurchaseOrder } from "@erp/api-client"
+import { useLocaleFormat } from "@erp/hooks"
 import { PurchaseOrderStatusBadge } from "./PurchaseOrderStatusBadge"
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 export function PurchaseOrderTable({ data, loading, onRowClick }: Props) {
   const { t } = useTranslation("purchasing")
   const { t: tc } = useTranslation("common")
+  const { formatDate } = useLocaleFormat()
 
   const columns: Column<PurchaseOrder>[] = [
     {
@@ -37,12 +39,12 @@ export function PurchaseOrderTable({ data, loading, onRowClick }: Props) {
       cell: (row) => <PurchaseOrderStatusBadge status={row.status} />,
     },
     {
-      key: "expected_date",
+      key: "expected_at",
       header: t("expectedDate"),
       hideBelow: "md",
       cell: (row) => (
         <span className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
-          {new Date(row.expected_date).toLocaleDateString()}
+          {formatDate(row.expected_at)}
         </span>
       ),
     },
@@ -74,7 +76,7 @@ export function PurchaseOrderTable({ data, loading, onRowClick }: Props) {
               {row.supplier_name ?? row.supplier_id}
             </span>
             <span className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
-              {new Date(row.expected_date).toLocaleDateString()}
+              {formatDate(row.expected_at)}
             </span>
           </div>
           <div className="flex flex-col items-end gap-2">

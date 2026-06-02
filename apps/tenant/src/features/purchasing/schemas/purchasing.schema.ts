@@ -4,7 +4,7 @@ export const createPurchaseOrderSchema = z.object({
   supplier_id: z.string().min(1),
   warehouse_id: z.string().min(1),
   source: z.enum(["MANUAL", "ORDER"]),
-  expected_date: z.string().min(1),
+  expected_at: z.string().min(1),
   notes: z.string().optional(),
 })
 

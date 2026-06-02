@@ -63,8 +63,8 @@ export function PurchaseOrderForm({ suppliers, warehouses, onSubmit, isLoading, 
         <Input
           label={t("expectedDate")}
           type="date"
-          {...register("expected_date")}
-          error={errors.expected_date?.message}
+          {...register("expected_at")}
+          error={errors.expected_at?.message}
         />
       </div>
       <Input
