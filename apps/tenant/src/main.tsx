@@ -52,6 +52,7 @@ setupTenantInterceptors(
       return null
     }
   },
+  () => useAuthStore.getState().tenantId,
 )
 
 // ─── Router ──────────────────────────────────────────────────────────────────

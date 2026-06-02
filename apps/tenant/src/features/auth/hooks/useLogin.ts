@@ -29,7 +29,8 @@ export function useLogin(onSuccess: () => void) {
 
       // Step 3: fetch permissions — normalize to lowercase and deduplicate
       const raw = await authService.getPermissions(res.user.id)
-      setPermissions([...new Set((raw ?? []).map((p) => p.toLowerCase()))])
+      const perms = Array.isArray(raw) ? [...new Set(raw.map((p) => p.toLowerCase()))] : []
+      setPermissions(perms)
 
       return res
     },

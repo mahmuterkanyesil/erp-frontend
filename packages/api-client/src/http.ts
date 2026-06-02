@@ -41,12 +41,17 @@ export function setupTenantInterceptors(
   getToken: () => string | null,
   onUnauthorized: () => void,
   refreshFn: () => Promise<string | null>,
+  getTenantId: () => string | null,
 ): void {
-  // Request: inject Bearer token
+  // Request: inject Bearer token + X-Tenant-ID
   tenantHttp.interceptors.request.use((config) => {
     const token = getToken()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
+    }
+    const tenantId = getTenantId()
+    if (tenantId && !config.headers["X-Tenant-ID"]) {
+      config.headers["X-Tenant-ID"] = tenantId
     }
     return config
   })
