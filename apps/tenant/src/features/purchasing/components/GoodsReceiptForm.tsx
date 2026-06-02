@@ -27,8 +27,8 @@ export function GoodsReceiptForm({ orderLines, onSubmit, isLoading, onCancel }: 
       lines: orderLines.map((l) => ({
         order_line_id: l.id,
         material_id: l.material_id,
-        quantity: l.quantity - l.received_quantity,
-        unit: l.unit,
+        quantity: l.ordered_qty_value - l.received_qty_value,
+        unit: l.ordered_qty_unit,
       })),
     },
   })
@@ -42,7 +42,7 @@ export function GoodsReceiptForm({ orderLines, onSubmit, isLoading, onCancel }: 
             className="p-3 rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-surface-dark"
           >
             <p className="text-sm font-500 text-text-main-light dark:text-text-main-dark mb-2">
-              {line.material_name ?? line.material_id}
+              {line.material_name} <span className="text-text-secondary-light dark:text-text-secondary-dark font-400">{line.material_code}</span>
             </p>
             <div className="grid grid-cols-2 gap-3">
               <Input

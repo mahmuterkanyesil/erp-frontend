@@ -193,12 +193,14 @@ export type PurchaseSource = "MANUAL" | "ORDER"
 export interface PurchaseOrderLine {
   id: string
   material_id: string
-  material_name?: string
-  quantity: number
-  unit: string
-  unit_price: string
-  total_price: string
-  received_quantity: number
+  material_name: string
+  material_code: string
+  ordered_qty_value: number
+  ordered_qty_unit: string
+  received_qty_value: number
+  unit_price_amount: string
+  unit_price_currency: string
+  status: string
 }
 
 export interface PurchaseOrder {

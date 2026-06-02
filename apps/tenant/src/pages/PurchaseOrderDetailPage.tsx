@@ -172,16 +172,20 @@ export function PurchaseOrderDetailPage() {
                     className="border-b border-border-light dark:border-border-dark last:border-0"
                   >
                     <td className="py-3 pe-4 text-text-main-light dark:text-text-main-dark">
-                      {line.material_name ?? line.material_id}
+                      <div>{line.material_name}</div>
+                      <div className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
+                        {line.material_code}
+                      </div>
                     </td>
                     <td className="py-3 pe-4 text-end text-text-main-light dark:text-text-main-dark">
-                      {line.quantity} {line.unit}
+                      {line.ordered_qty_value} {line.ordered_qty_unit}
                     </td>
                     <td className="py-3 pe-4 text-end text-text-secondary-light dark:text-text-secondary-dark hidden md:table-cell">
-                      {line.unit_price}
+                      {line.unit_price_amount} {line.unit_price_currency}
                     </td>
                     <td className="py-3 text-end font-500 text-text-main-light dark:text-text-main-dark">
-                      {line.total_price}
+                      {(line.ordered_qty_value * parseFloat(line.unit_price_amount)).toFixed(2)}{" "}
+                      {line.unit_price_currency}
                     </td>
                   </tr>
                 ))}
