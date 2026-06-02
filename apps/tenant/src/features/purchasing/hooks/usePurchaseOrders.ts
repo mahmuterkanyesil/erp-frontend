@@ -89,8 +89,9 @@ export function useCancelOrder(onSuccess?: () => void) {
   const { t } = useTranslation("purchasing")
 
   return useMutation({
-    mutationFn: (id: string) => purchasingService.cancelOrder(id),
-    onSuccess: (_, id) => {
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      purchasingService.cancelOrder(id, reason),
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.detail(id) })
       queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.all })
       toast.success(t("successCancelled"))

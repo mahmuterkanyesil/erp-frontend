@@ -55,5 +55,11 @@
   "successLineAdded": "Satır eklendi",
   "successReceipt": "Mal kabul kaydedildi",
   "successCreatedMaterial": "Hammadde oluşturuldu",
-  "successUpdatedSupplier": "Tedarikçi güncellendi"
+  "successUpdatedSupplier": "Tedarikçi güncellendi",
+  "orderProcess": "Sipariş Süreci",
+  "summaryCard": "Özet",
+  "cancelReason": "İptal Nedeni",
+  "cancelReasonPlaceholder": "İptal nedenini giriniz...",
+  "receiptsHistory": "Teslim Geçmişi",
+  "noReceipts": "Henüz mal kabul yapılmamış"
 }

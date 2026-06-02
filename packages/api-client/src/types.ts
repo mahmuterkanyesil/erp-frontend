@@ -214,6 +214,7 @@ export interface PurchaseOrder {
   status: PurchaseOrderStatus
   expected_at: string
   lines: PurchaseOrderLine[]
+  receipts?: GoodsReceipt[]
   total_amount: string
   currency: string
   notes?: string
@@ -246,6 +247,23 @@ export interface GoodsReceiptLine {
 export interface CreateGoodsReceiptRequest {
   lines: GoodsReceiptLine[]
   notes?: string
+}
+
+export interface GoodsReceiptLineItem {
+  id: string
+  order_line_id: string
+  material_id: string
+  material_name?: string
+  quantity: number
+  unit: string
+}
+
+export interface GoodsReceipt {
+  id: string
+  order_id: string
+  received_at: string
+  notes?: string
+  lines: GoodsReceiptLineItem[]
 }
 
 export interface RawMaterial {

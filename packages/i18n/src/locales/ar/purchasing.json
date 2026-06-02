@@ -55,5 +55,11 @@
   "successLineAdded": "تمت إضافة السطر",
   "successReceipt": "تم حفظ استلام البضاعة",
   "successCreatedMaterial": "تم إنشاء المادة الخام",
-  "successUpdatedSupplier": "تم تحديث المورد"
+  "successUpdatedSupplier": "تم تحديث المورد",
+  "orderProcess": "مسار الأمر",
+  "summaryCard": "ملخص",
+  "cancelReason": "سبب الإلغاء",
+  "cancelReasonPlaceholder": "أدخل سبب الإلغاء...",
+  "receiptsHistory": "سجل الاستلام",
+  "noReceipts": "لا توجد عمليات استلام بعد"
 }

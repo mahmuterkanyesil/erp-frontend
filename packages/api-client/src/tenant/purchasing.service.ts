@@ -32,8 +32,10 @@ export const purchasingService = {
   confirmOrder: (id: string): Promise<PurchaseOrder> =>
     tenantHttp.post<PurchaseOrder>(`/api/v1/purchasing/orders/${id}/confirm`).then((r) => r.data),
 
-  cancelOrder: (id: string): Promise<PurchaseOrder> =>
-    tenantHttp.post<PurchaseOrder>(`/api/v1/purchasing/orders/${id}/cancel`).then((r) => r.data),
+  cancelOrder: (id: string, reason?: string): Promise<PurchaseOrder> =>
+    tenantHttp
+      .post<PurchaseOrder>(`/api/v1/purchasing/orders/${id}/cancel`, reason ? { reason } : undefined)
+      .then((r) => r.data),
 
   createReceipt: (id: string, body: CreateGoodsReceiptRequest): Promise<PurchaseOrder> =>
     tenantHttp

@@ -55,5 +55,11 @@
   "successLineAdded": "Line added",
   "successReceipt": "Goods receipt saved",
   "successCreatedMaterial": "Raw material created",
-  "successUpdatedSupplier": "Supplier updated"
+  "successUpdatedSupplier": "Supplier updated",
+  "orderProcess": "Order Process",
+  "summaryCard": "Summary",
+  "cancelReason": "Cancellation Reason",
+  "cancelReasonPlaceholder": "Enter cancellation reason...",
+  "receiptsHistory": "Receipt History",
+  "noReceipts": "No goods receipts yet"
 }
