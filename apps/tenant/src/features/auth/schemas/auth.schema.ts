@@ -4,8 +4,7 @@ export const loginSchema = z.object({
   tenant_id: z
     .string()
     .min(1, "Firma kodu zorunludur")
-    .max(50, "Firma kodu çok uzun")
-    .regex(/^[a-z0-9_]+$/, "Firma kodu yalnızca küçük harf, rakam ve alt çizgi içerebilir"),
+    .uuid("Geçerli bir firma UUID'si girin"),
   email: z
     .string()
     .min(1, "E-posta zorunludur")
