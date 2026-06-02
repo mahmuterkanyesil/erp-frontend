@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@erp/ui": ["../../packages/ui/src/index.ts"],
+      "@erp/api-client": ["../../packages/api-client/src/index.ts"],
+      "@erp/hooks": ["../../packages/hooks/src/index.ts"],
+      "@erp/utils": ["../../packages/utils/src/index.ts"],
+      "@erp/i18n": ["../../packages/i18n/src/index.ts"]
+    }
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

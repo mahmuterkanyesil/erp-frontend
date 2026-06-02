@@ -1,0 +1,9 @@
+{
+  "forbidden": "You do not have permission for this action",
+  "notFound": "Record not found",
+  "conflict": "Action conflicts with current state",
+  "unprocessable": "Business rule violation",
+  "rateLimited": "Too many requests, please wait",
+  "serverError": "An error occurred, please try again",
+  "networkError": "Network error, check your connection"
+}

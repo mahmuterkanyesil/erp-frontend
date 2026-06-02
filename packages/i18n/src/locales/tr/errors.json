@@ -1,0 +1,9 @@
+{
+  "forbidden": "Bu işlem için yetkiniz yok",
+  "notFound": "Kayıt bulunamadı",
+  "conflict": "İşlem mevcut durumla çakışıyor",
+  "unprocessable": "İş kuralı ihlali",
+  "rateLimited": "Çok fazla istek, lütfen bekleyin",
+  "serverError": "Bir hata oluştu, lütfen tekrar deneyin",
+  "networkError": "Bağlantı hatası"
+}

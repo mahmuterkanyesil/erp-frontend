@@ -1,0 +1,8 @@
+{
+  "title": "Inventory",
+  "stock": "Stock",
+  "available": "Available",
+  "reserved": "Reserved",
+  "lowStock": "Low Stock Alerts",
+  "empty": "No inventory records"
+}

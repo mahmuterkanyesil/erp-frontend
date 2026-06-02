@@ -1,0 +1,8 @@
+{
+  "title": "Envanter",
+  "stock": "Stok",
+  "available": "Mevcut",
+  "reserved": "Rezerve",
+  "lowStock": "Düşük Stok Uyarıları",
+  "empty": "Envanter kaydı bulunamadı"
+}

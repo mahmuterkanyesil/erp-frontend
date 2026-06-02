@@ -1,0 +1,8 @@
+{
+  "title": "Orders",
+  "newOrder": "New Order",
+  "orderDetail": "Order Detail",
+  "orderNumber": "Order No",
+  "customer": "Customer",
+  "empty": "No orders yet"
+}
