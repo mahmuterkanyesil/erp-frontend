@@ -27,9 +27,9 @@ export function useLogin(onSuccess: () => void) {
         refreshToken: res.refresh_token,
       })
 
-      // Step 3: fetch permissions
-      const permissions = await authService.getPermissions(res.user.id)
-      setPermissions(permissions)
+      // Step 3: fetch permissions — normalize to lowercase and deduplicate
+      const raw = await authService.getPermissions(res.user.id)
+      setPermissions([...new Set((raw ?? []).map((p) => p.toLowerCase()))])
 
       return res
     },

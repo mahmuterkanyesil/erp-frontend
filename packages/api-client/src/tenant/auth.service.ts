@@ -1,5 +1,5 @@
 import { tenantHttp } from "../http"
-import type { LoginRequest, LoginResponse, RefreshTokenRequest, PermissionsResponse } from "../types"
+import type { LoginRequest, LoginResponse, RefreshTokenRequest } from "../types"
 
 export const authService = {
   login: (body: LoginRequest): Promise<LoginResponse> =>
@@ -14,6 +14,6 @@ export const authService = {
 
   getPermissions: (userId: string): Promise<string[]> =>
     tenantHttp
-      .get<PermissionsResponse>(`/api/v1/users/${userId}/permissions`)
-      .then((r) => r.data.permissions),
+      .get<string[]>(`/api/v1/users/${userId}/permissions`)
+      .then((r) => r.data),
 }

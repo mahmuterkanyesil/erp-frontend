@@ -7,7 +7,7 @@ import { useAuthStore } from "./stores/auth.store"
  * const canCreate = usePermission("orders:create")
  */
 export function usePermission(permission: string): boolean {
-  return useAuthStore((state) => state.permissions.includes(permission))
+  return useAuthStore((state) => (state.permissions ?? []).includes(permission))
 }
 
 /**
@@ -15,6 +15,6 @@ export function usePermission(permission: string): boolean {
  */
 export function usePermissions(permissions: string[]): boolean {
   return useAuthStore((state) =>
-    permissions.every((p) => state.permissions.includes(p)),
+    permissions.every((p) => (state.permissions ?? []).includes(p)),
   )
 }
