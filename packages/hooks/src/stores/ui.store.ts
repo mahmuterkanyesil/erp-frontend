@@ -51,7 +51,7 @@ interface UIStore {
   setLanguage: (lang: Language) => void
 }
 
-export const useUIStore = create<UIStore>((set, get) => ({
+export const useUIStore = create<UIStore>((set, _get) => ({
   sidebarOpen: false,
   theme: getInitialTheme(),
   language: getInitialLanguage(),

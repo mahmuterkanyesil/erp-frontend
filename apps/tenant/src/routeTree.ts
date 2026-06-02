@@ -7,6 +7,12 @@ import { ForbiddenPage } from "./pages/ForbiddenPage"
 import { NotFoundPage } from "./pages/NotFoundPage"
 import { DashboardPage } from "./pages/DashboardPage"
 import { ProtectedLayout } from "./layouts/ProtectedLayout"
+import { PurchasingPage } from "./pages/PurchasingPage"
+import { NewPurchaseOrderPage } from "./pages/NewPurchaseOrderPage"
+import { PurchaseOrderDetailPage } from "./pages/PurchaseOrderDetailPage"
+import { GoodsReceiptPage } from "./pages/GoodsReceiptPage"
+import { MaterialsPage } from "./pages/MaterialsPage"
+import { MaterialDetailPage } from "./pages/MaterialDetailPage"
 
 interface RouterContext {
   queryClient: QueryClient
@@ -36,6 +42,43 @@ const dashboardRoute = createRoute({
   component: DashboardPage,
 })
 
+// ─── Purchasing ───────────────────────────────────────────────────────────
+const purchasingRoute = createRoute({
+  getParentRoute: () => protectedLayout,
+  path: "/purchasing",
+  component: PurchasingPage,
+})
+
+const newPurchaseOrderRoute = createRoute({
+  getParentRoute: () => protectedLayout,
+  path: "/purchasing/new",
+  component: NewPurchaseOrderPage,
+})
+
+const purchasingMaterialsRoute = createRoute({
+  getParentRoute: () => protectedLayout,
+  path: "/purchasing/materials",
+  component: MaterialsPage,
+})
+
+const purchasingMaterialDetailRoute = createRoute({
+  getParentRoute: () => protectedLayout,
+  path: "/purchasing/materials/$materialId",
+  component: MaterialDetailPage,
+})
+
+const purchaseOrderDetailRoute = createRoute({
+  getParentRoute: () => protectedLayout,
+  path: "/purchasing/$orderId",
+  component: PurchaseOrderDetailPage,
+})
+
+const goodsReceiptRoute = createRoute({
+  getParentRoute: () => protectedLayout,
+  path: "/purchasing/$orderId/receipt",
+  component: GoodsReceiptPage,
+})
+
 // ─── Public routes ────────────────────────────────────────────────────────
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -62,7 +105,15 @@ const notFoundRoute = createRoute({
 
 // ─── Tree ──────────────────────────────────────────────────────────────────
 export const routeTree = rootRoute.addChildren([
-  protectedLayout.addChildren([dashboardRoute]),
+  protectedLayout.addChildren([
+    dashboardRoute,
+    purchasingRoute,
+    newPurchaseOrderRoute,
+    purchasingMaterialsRoute,
+    purchasingMaterialDetailRoute,
+    purchaseOrderDetailRoute,
+    goodsReceiptRoute,
+  ]),
   loginRoute,
   forbiddenRoute,
   notFoundRoute,

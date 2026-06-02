@@ -23,8 +23,21 @@ export type {
   Supplier,
   Warehouse,
   AccountingAccount,
+  PurchaseOrderStatus,
+  PurchaseOrderLine,
+  PurchaseOrder,
+  CreatePurchaseOrderRequest,
+  AddPurchaseOrderLineRequest,
+  GoodsReceiptLine,
+  CreateGoodsReceiptRequest,
+  MaterialType,
+  PurchaseSource,
+  RawMaterial,
+  CreateRawMaterialRequest,
+  UpdatePreferredSupplierRequest,
 } from "./types"
 
 // Tenant services
 export { authService } from "./tenant/auth.service"
 export { orderService } from "./tenant/order.service"
+export { purchasingService } from "./tenant/purchasing.service"

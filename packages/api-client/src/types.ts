@@ -171,3 +171,104 @@ export interface AccountingAccount {
   status: "active" | "frozen"
   created_at: string
 }
+
+// ─── Purchasing ───────────────────────────────────────────────────────────────
+
+export type PurchaseOrderStatus =
+  | "draft"
+  | "confirmed"
+  | "partially_received"
+  | "received"
+  | "cancelled"
+
+export type MaterialType =
+  | "plastic_granule"
+  | "additive"
+  | "packaging"
+  | "semi_finished"
+  | "other"
+
+export type PurchaseSource = "MANUAL" | "ORDER"
+
+export interface PurchaseOrderLine {
+  id: string
+  material_id: string
+  material_name?: string
+  quantity: number
+  unit: string
+  unit_price: string
+  total_price: string
+  received_quantity: number
+}
+
+export interface PurchaseOrder {
+  id: string
+  tenant_id: string
+  supplier_id: string
+  supplier_name?: string
+  warehouse_id: string
+  warehouse_name?: string
+  source: PurchaseSource
+  status: PurchaseOrderStatus
+  expected_date: string
+  lines: PurchaseOrderLine[]
+  total_amount: string
+  currency: string
+  notes?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface CreatePurchaseOrderRequest {
+  supplier_id: string
+  warehouse_id: string
+  source: PurchaseSource
+  expected_date: string
+  notes?: string
+}
+
+export interface AddPurchaseOrderLineRequest {
+  material_id: string
+  quantity: number
+  unit: string
+  unit_price: string
+}
+
+export interface GoodsReceiptLine {
+  order_line_id: string
+  material_id: string
+  quantity: number
+  unit: string
+}
+
+export interface CreateGoodsReceiptRequest {
+  lines: GoodsReceiptLine[]
+  notes?: string
+}
+
+export interface RawMaterial {
+  id: string
+  tenant_id: string
+  name: string
+  sku: string
+  material_type: MaterialType
+  unit: string
+  description?: string
+  preferred_supplier_id?: string
+  min_stock_level?: number
+  current_stock?: number
+  created_at: string
+}
+
+export interface CreateRawMaterialRequest {
+  name: string
+  sku: string
+  material_type: MaterialType
+  unit: string
+  description?: string
+  min_stock_level?: number
+}
+
+export interface UpdatePreferredSupplierRequest {
+  supplier_id: string
+}

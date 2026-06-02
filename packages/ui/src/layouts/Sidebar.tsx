@@ -1,7 +1,7 @@
 import { type ReactNode } from "react"
 import { cn } from "@erp/utils"
 import { useTranslation } from "@erp/i18n"
-import { useAuthStore, useUIStore, usePermission } from "@erp/hooks"
+import { useAuthStore, usePermission } from "@erp/hooks"
 import type { NavGroup, NavItem } from "./navConfig"
 
 // ─── Types ────────────────────────────────────────────────────────────────────

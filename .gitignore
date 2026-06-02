@@ -5,6 +5,14 @@ node_modules
 build
 dist
 *.tsbuildinfo
+*.d.ts.map
+
+# Turbo cache
+.turbo
+
+# Vite composite build artifacts
+vite.config.js
+vite.config.d.ts
 
 # Environment
 .env

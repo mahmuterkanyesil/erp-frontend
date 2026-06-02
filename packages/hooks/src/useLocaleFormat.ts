@@ -1,4 +1,4 @@
-import { useTranslation } from "react-i18next"
+import { useTranslation } from "@erp/i18n"
 import { formatCurrency, formatDate, formatDateTime, formatRelativeTime } from "@erp/utils"
 import type { Language } from "./stores/ui.store"
 
