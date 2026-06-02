@@ -1,5 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query"
 import { createRootRouteWithContext, createRoute, redirect } from "@tanstack/react-router"
+import type { PurchaseOrderStatus } from "@erp/api-client"
 import { useAuthStore } from "@erp/hooks"
 
 import { LoginPage } from "./pages/LoginPage"
@@ -47,6 +48,9 @@ const purchasingRoute = createRoute({
   getParentRoute: () => protectedLayout,
   path: "/purchasing",
   component: PurchasingPage,
+  validateSearch: (search: Record<string, unknown>): { status?: PurchaseOrderStatus | "all" } => ({
+    status: (search.status as PurchaseOrderStatus | "all") ?? "all",
+  }),
 })
 
 const newPurchaseOrderRoute = createRoute({

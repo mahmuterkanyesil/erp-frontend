@@ -38,6 +38,7 @@
   "emptyMaterials": "لا توجد مواد خام",
   "source_MANUAL": "يدوي",
   "source_ORDER": "من طلب",
+  "filterAll": "الكل",
   "status_draft": "مسودة",
   "status_confirmed": "مؤكد",
   "status_partially_received": "مستلم جزئياً",

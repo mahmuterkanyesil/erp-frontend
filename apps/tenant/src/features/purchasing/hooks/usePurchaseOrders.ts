@@ -10,14 +10,15 @@ import type {
 
 export const purchaseOrderKeys = {
   all: ["purchasing", "orders"] as const,
-  list: (supplierId?: string) => [...purchaseOrderKeys.all, "list", supplierId] as const,
+  list: (params?: { supplier_id?: string; status?: string }) =>
+    [...purchaseOrderKeys.all, "list", params] as const,
   detail: (id: string) => [...purchaseOrderKeys.all, "detail", id] as const,
 }
 
-export function usePurchaseOrders(supplierId?: string) {
+export function usePurchaseOrders(params?: { supplier_id?: string; status?: string }) {
   return useQuery({
-    queryKey: purchaseOrderKeys.list(supplierId),
-    queryFn: () => purchasingService.getOrders(supplierId),
+    queryKey: purchaseOrderKeys.list(params),
+    queryFn: () => purchasingService.getOrders(params),
     staleTime: 30_000,
   })
 }

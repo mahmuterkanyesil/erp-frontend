@@ -38,6 +38,7 @@
   "emptyMaterials": "No raw materials found",
   "source_MANUAL": "Manual",
   "source_ORDER": "From Order",
+  "filterAll": "All",
   "status_draft": "Draft",
   "status_confirmed": "Confirmed",
   "status_partially_received": "Partially Received",

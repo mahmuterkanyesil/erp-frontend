@@ -13,10 +13,13 @@ export const purchasingService = {
   createOrder: (body: CreatePurchaseOrderRequest): Promise<PurchaseOrder> =>
     tenantHttp.post<PurchaseOrder>("/api/v1/purchasing/orders", body).then((r) => r.data),
 
-  getOrders: (supplierId?: string): Promise<PurchaseOrder[]> =>
+  getOrders: (params?: { supplier_id?: string; status?: string }): Promise<PurchaseOrder[]> =>
     tenantHttp
       .get<PurchaseOrder[]>("/api/v1/purchasing/orders", {
-        params: supplierId ? { supplier_id: supplierId } : undefined,
+        params: {
+          ...(params?.supplier_id ? { supplier_id: params.supplier_id } : {}),
+          ...(params?.status && params.status !== "all" ? { status: params.status } : {}),
+        },
       })
       .then((r) => r.data),
 
