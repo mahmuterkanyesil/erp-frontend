@@ -1,0 +1,18 @@
+{
+  "title": "نظرة عامة",
+  "welcomePrefix": "مرحباً",
+  "welcomeSubtitle": "اليوم يوم رائع لعملك.",
+  "stats": {
+    "dailySales": "المبيعات اليومية",
+    "pendingOrders": "الطلبات المعلقة",
+    "criticalStock": "المخزون الحرج",
+    "activeCustomers": "العملاء النشطون"
+  },
+  "trends": {
+    "comparedToYesterday": "مقارنة بالأمس",
+    "comparedToLastWeek": "مقارنة بالأسبوع الماضي",
+    "criticalLevel": "المستوى الحرج",
+    "productsNeedAction": "منتج يحتاج إجراء",
+    "onlineCustomers": "العملاء المتصلون"
+  }
+}

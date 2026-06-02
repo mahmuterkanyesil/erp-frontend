@@ -1,0 +1,18 @@
+{
+  "title": "Genel Bakış",
+  "welcomePrefix": "Hoş geldiniz",
+  "welcomeSubtitle": "Bugün işletmeniz için harika bir gün.",
+  "stats": {
+    "dailySales": "Günlük Satış",
+    "pendingOrders": "Bekleyen Sipariş",
+    "criticalStock": "Kritik Stok",
+    "activeCustomers": "Aktif Müşteri"
+  },
+  "trends": {
+    "comparedToYesterday": "Düne göre",
+    "comparedToLastWeek": "Geçen haftaya göre",
+    "criticalLevel": "Kritik Seviye",
+    "productsNeedAction": "Ürün aksiyon bekliyor",
+    "onlineCustomers": "Online müşteri"
+  }
+}

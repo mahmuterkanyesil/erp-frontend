@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useNavigate } from "@tanstack/react-router"
 import { useTranslation } from "@erp/i18n"
 import { AuthLayout, LanguageSwitcher } from "@erp/ui"
 import { loginSchema, type LoginFormValues } from "../features/auth/schemas/auth.schema"
@@ -19,10 +20,9 @@ export function LoginPage() {
     defaultValues: { tenant_id: "", email: "", password: "" },
   })
 
-  // On success: navigate to dashboard
-  // Using window.location for now — will use TanStack Router once routes are built
+  const navigate = useNavigate()
   const { mutate: login, isPending } = useLogin(() => {
-    window.location.href = "/"
+    navigate({ to: "/" })
   })
 
   const onSubmit = (values: LoginFormValues) => login(values)

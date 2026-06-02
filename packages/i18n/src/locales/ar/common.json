@@ -26,5 +26,10 @@
   "successSaved": "تم الحفظ بنجاح",
   "successCreated": "تم الإنشاء بنجاح",
   "successUpdated": "تم التحديث بنجاح",
-  "successDeleted": "تم الحذف بنجاح"
+  "successDeleted": "تم الحذف بنجاح",
+  "backToDashboard": "العودة إلى لوحة التحكم",
+  "forbidden": "وصول مرفوض",
+  "forbiddenMessage": "ليس لديك صلاحية للوصول إلى هذه الصفحة.",
+  "notFound": "الصفحة غير موجودة",
+  "notFoundMessage": "الصفحة التي تبحث عنها غير موجودة أو ربما تم نقلها."
 }

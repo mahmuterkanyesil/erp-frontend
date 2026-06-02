@@ -1,0 +1,18 @@
+{
+  "title": "Overview",
+  "welcomePrefix": "Welcome",
+  "welcomeSubtitle": "Today is a great day for your business.",
+  "stats": {
+    "dailySales": "Daily Sales",
+    "pendingOrders": "Pending Orders",
+    "criticalStock": "Critical Stock",
+    "activeCustomers": "Active Customers"
+  },
+  "trends": {
+    "comparedToYesterday": "Compared to yesterday",
+    "comparedToLastWeek": "Compared to last week",
+    "criticalLevel": "Critical Level",
+    "productsNeedAction": "products need action",
+    "onlineCustomers": "Online customers"
+  }
+}

@@ -63,12 +63,32 @@ declare module "@tanstack/react-router" {
   }
 }
 
-// ─── Root ─────────────────────────────────────────────────────────────────────
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-      <Toaster position="top-end" richColors closeButton />
-    </QueryClientProvider>
-  </StrictMode>,
-)
+// ─── Silent auth bootstrap ────────────────────────────────────────────────────
+async function bootstrap() {
+  const refreshToken = useAuthStore.getState().getStoredRefreshToken()
+  const tenantId = useAuthStore.getState().getStoredTenantId()
+
+  if (refreshToken && tenantId) {
+    try {
+      const res = await authService.refresh({ tenant_id: tenantId, refresh_token: refreshToken })
+      useAuthStore.getState().setAuth({
+        user: res.user,
+        accessToken: res.access_token,
+        refreshToken: res.refresh_token,
+      })
+    } catch {
+      useAuthStore.getState().clearAuth()
+    }
+  }
+
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+        <Toaster position="top-end" richColors closeButton />
+      </QueryClientProvider>
+    </StrictMode>,
+  )
+}
+
+bootstrap()

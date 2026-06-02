@@ -26,5 +26,10 @@
   "successSaved": "Başarıyla kaydedildi",
   "successCreated": "Başarıyla oluşturuldu",
   "successUpdated": "Başarıyla güncellendi",
-  "successDeleted": "Başarıyla silindi"
+  "successDeleted": "Başarıyla silindi",
+  "backToDashboard": "Panele Dön",
+  "forbidden": "Yetkisiz Erişim",
+  "forbiddenMessage": "Bu sayfaya erişim yetkiniz bulunmuyor.",
+  "notFound": "Sayfa Bulunamadı",
+  "notFoundMessage": "Aradığınız sayfa bulunamadı veya taşınmış olabilir."
 }

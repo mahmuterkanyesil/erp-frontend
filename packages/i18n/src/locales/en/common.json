@@ -26,5 +26,10 @@
   "successSaved": "Saved successfully",
   "successCreated": "Created successfully",
   "successUpdated": "Updated successfully",
-  "successDeleted": "Deleted successfully"
+  "successDeleted": "Deleted successfully",
+  "backToDashboard": "Back to Dashboard",
+  "forbidden": "Access Denied",
+  "forbiddenMessage": "You don't have permission to access this page.",
+  "notFound": "Page Not Found",
+  "notFoundMessage": "The page you're looking for doesn't exist or has been moved."
 }
