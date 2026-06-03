@@ -48,16 +48,6 @@ export function PurchaseOrderTable({ data, loading, onRowClick }: Props) {
         </span>
       ),
     },
-    {
-      key: "total",
-      header: tc("total"),
-      align: "end",
-      cell: (row) => (
-        <span className="text-sm font-500">
-          {row.total_amount} {row.currency}
-        </span>
-      ),
-    },
   ]
 
   return (
@@ -81,9 +71,6 @@ export function PurchaseOrderTable({ data, loading, onRowClick }: Props) {
           </div>
           <div className="flex flex-col items-end gap-2">
             <PurchaseOrderStatusBadge status={row.status} />
-            <span className="text-sm font-500">
-              {row.total_amount} {row.currency}
-            </span>
           </div>
         </div>
       )}
