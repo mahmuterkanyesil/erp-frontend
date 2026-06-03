@@ -7,6 +7,12 @@ import type {
   RawMaterial,
   CreateRawMaterialRequest,
   UpdatePreferredSupplierRequest,
+  MaterialStats,
+  UpdateOrderLineRequest,
+  ReplenishStockRequest,
+  AdjustStockRequest,
+  BulkCreateMaterialsRequest,
+  BulkCreateMaterialsResponse,
 } from "../types"
 
 export const purchasingService = {
@@ -51,5 +57,42 @@ export const purchasingService = {
   updatePreferredSupplier: (id: string, body: UpdatePreferredSupplierRequest): Promise<RawMaterial> =>
     tenantHttp
       .patch<RawMaterial>(`/api/v1/purchasing/materials/${id}/supplier`, body)
+      .then((r) => r.data),
+
+  getMaterials: (params?: { type?: string }): Promise<RawMaterial[]> =>
+    tenantHttp
+      .get<RawMaterial[]>("/api/v1/purchasing/materials", { params })
+      .then((r) => r.data),
+
+  getMaterialStats: (id: string): Promise<MaterialStats> =>
+    tenantHttp.get<MaterialStats>(`/api/v1/purchasing/materials/${id}/stats`).then((r) => r.data),
+
+  updateOrderLine: (
+    orderId: string,
+    lineId: string,
+    body: UpdateOrderLineRequest,
+  ): Promise<PurchaseOrder> =>
+    tenantHttp
+      .patch<PurchaseOrder>(`/api/v1/purchasing/orders/${orderId}/lines/${lineId}`, body)
+      .then((r) => r.data),
+
+  deleteOrderLine: (orderId: string, lineId: string): Promise<PurchaseOrder> =>
+    tenantHttp
+      .delete<PurchaseOrder>(`/api/v1/purchasing/orders/${orderId}/lines/${lineId}`)
+      .then((r) => r.data),
+
+  replenishStock: (id: string, body: ReplenishStockRequest): Promise<RawMaterial> =>
+    tenantHttp
+      .post<RawMaterial>(`/api/v1/purchasing/materials/${id}/stock/replenish`, body)
+      .then((r) => r.data),
+
+  adjustStock: (id: string, body: AdjustStockRequest): Promise<RawMaterial> =>
+    tenantHttp
+      .post<RawMaterial>(`/api/v1/purchasing/materials/${id}/stock/adjust`, body)
+      .then((r) => r.data),
+
+  bulkCreateMaterials: (body: BulkCreateMaterialsRequest): Promise<BulkCreateMaterialsResponse> =>
+    tenantHttp
+      .post<BulkCreateMaterialsResponse>("/api/v1/purchasing/materials/bulk", body)
       .then((r) => r.data),
 }

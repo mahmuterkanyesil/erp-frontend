@@ -19,10 +19,14 @@ import {
   useConfirmOrder,
   useCancelOrder,
   useAddOrderLine,
+  useUpdateOrderLine,
+  useDeleteOrderLine,
   PurchaseOrderStatusBadge,
   AddLineForm,
+  UpdateOrderLineForm,
 } from "@/features/purchasing"
-import type { AddOrderLineValues } from "@/features/purchasing"
+import type { AddOrderLineValues, UpdateOrderLineValues } from "@/features/purchasing"
+import type { PurchaseOrderLine } from "@erp/api-client"
 import type { PurchaseOrderStatus } from "@erp/api-client"
 
 const TIMELINE_STEPS: PurchaseOrderStatus[] = [
@@ -45,12 +49,20 @@ export function PurchaseOrderDetailPage() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [showCancel, setShowCancel] = useState(false)
   const [cancelReason, setCancelReason] = useState("")
+  const [editingLine, setEditingLine] = useState<PurchaseOrderLine | null>(null)
+  const [deletingLineId, setDeletingLineId] = useState<string | null>(null)
 
   const { data: order, isLoading } = usePurchaseOrder(orderId)
   const { mutate: confirmOrder, isPending: isConfirming } = useConfirmOrder()
   const { mutate: cancelOrder, isPending: isCancelling } = useCancelOrder()
   const { mutate: addLine, isPending: isAddingLine } = useAddOrderLine(orderId, () =>
     setShowAddLine(false),
+  )
+  const { mutate: updateLine, isPending: isUpdatingLine } = useUpdateOrderLine(orderId, () =>
+    setEditingLine(null),
+  )
+  const { mutate: deleteLine, isPending: isDeletingLine } = useDeleteOrderLine(orderId, () =>
+    setDeletingLineId(null),
   )
 
   if (isLoading) return <FormSkeleton />
@@ -285,9 +297,10 @@ export function PurchaseOrderDetailPage() {
                       <th className="text-end py-2 pe-4 font-500 text-text-secondary-light dark:text-text-secondary-dark hidden md:table-cell">
                         {t("unitPrice")}
                       </th>
-                      <th className="text-end py-2 font-500 text-text-secondary-light dark:text-text-secondary-dark">
+                      <th className="text-end py-2 pe-4 font-500 text-text-secondary-light dark:text-text-secondary-dark">
                         {t("totalPrice")}
                       </th>
+                      {canModify && <th className="py-2 w-16" />}
                     </tr>
                   </thead>
                   <tbody>
@@ -311,10 +324,30 @@ export function PurchaseOrderDetailPage() {
                         <td className="py-3 pe-4 text-end text-text-secondary-light dark:text-text-secondary-dark hidden md:table-cell">
                           {line.unit_price_amount} {line.unit_price_currency}
                         </td>
-                        <td className="py-3 text-end font-500 text-text-main-light dark:text-text-main-dark">
+                        <td className="py-3 pe-4 text-end font-500 text-text-main-light dark:text-text-main-dark">
                           {(line.ordered_qty_value * parseFloat(line.unit_price_amount)).toFixed(2)}{" "}
                           {line.unit_price_currency}
                         </td>
+                        {canModify && (
+                          <td className="py-3 text-end">
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                onClick={() => setEditingLine(line)}
+                                className="text-text-secondary-light dark:text-text-secondary-dark hover:text-primary transition-colors"
+                                title={t("editLine")}
+                              >
+                                <span className="material-symbols-outlined text-[18px]">edit</span>
+                              </button>
+                              <button
+                                onClick={() => setDeletingLineId(line.id)}
+                                className="text-text-secondary-light dark:text-text-secondary-dark hover:text-danger transition-colors"
+                                title={t("deleteLine")}
+                              >
+                                <span className="material-symbols-outlined text-[18px]">delete</span>
+                              </button>
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -371,6 +404,36 @@ export function PurchaseOrderDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* Edit line modal */}
+      <Modal
+        open={editingLine !== null}
+        onClose={() => setEditingLine(null)}
+        title={t("editLine")}
+      >
+        {editingLine && (
+          <UpdateOrderLineForm
+            line={editingLine}
+            onSubmit={(values: UpdateOrderLineValues) =>
+              updateLine({ lineId: editingLine.id, body: values })
+            }
+            isLoading={isUpdatingLine}
+            onCancel={() => setEditingLine(null)}
+          />
+        )}
+      </Modal>
+
+      {/* Delete line confirm */}
+      <ConfirmModal
+        open={deletingLineId !== null}
+        onClose={() => setDeletingLineId(null)}
+        onConfirm={() => {
+          if (deletingLineId) deleteLine(deletingLineId)
+        }}
+        title={t("deleteLineTitle")}
+        danger
+        loading={isDeletingLine}
+      />
 
       {/* Add line modal */}
       <Modal open={showAddLine} onClose={() => setShowAddLine(false)} title={t("addLine")}>

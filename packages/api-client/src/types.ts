@@ -292,3 +292,36 @@ export interface CreateRawMaterialRequest {
 export interface UpdatePreferredSupplierRequest {
   supplier_id: string
 }
+
+export interface MaterialStats {
+  current_stock: number
+  min_stock_level?: number
+  is_below_min: boolean
+  pending_orders_count: number
+  pending_orders_qty: number
+  last_receipt_at?: string
+}
+
+export interface UpdateOrderLineRequest {
+  quantity: number
+  unit_price: string
+}
+
+export interface ReplenishStockRequest {
+  quantity: number
+  notes?: string
+}
+
+export interface AdjustStockRequest {
+  delta: number
+  reason: string
+}
+
+export interface BulkCreateMaterialsRequest {
+  materials: CreateRawMaterialRequest[]
+}
+
+export interface BulkCreateMaterialsResponse {
+  created: RawMaterial[]
+  errors: Array<{ index: number; error: string }>
+}

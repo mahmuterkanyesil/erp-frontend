@@ -35,6 +35,14 @@ export type {
   RawMaterial,
   CreateRawMaterialRequest,
   UpdatePreferredSupplierRequest,
+  MaterialStats,
+  UpdateOrderLineRequest,
+  ReplenishStockRequest,
+  AdjustStockRequest,
+  BulkCreateMaterialsRequest,
+  BulkCreateMaterialsResponse,
+  GoodsReceipt,
+  GoodsReceiptLineItem,
 } from "./types"
 
 // Tenant services
