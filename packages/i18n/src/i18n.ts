@@ -12,6 +12,7 @@ import trProducts from "./locales/tr/products.json"
 import trSales from "./locales/tr/sales.json"
 import trPurchasing from "./locales/tr/purchasing.json"
 import trCustomers from "./locales/tr/customers.json"
+import trSuppliers from "./locales/tr/suppliers.json"
 import trWarehouse from "./locales/tr/warehouse.json"
 import trAccounting from "./locales/tr/accounting.json"
 import trUsers from "./locales/tr/users.json"
@@ -28,6 +29,7 @@ import enProducts from "./locales/en/products.json"
 import enSales from "./locales/en/sales.json"
 import enPurchasing from "./locales/en/purchasing.json"
 import enCustomers from "./locales/en/customers.json"
+import enSuppliers from "./locales/en/suppliers.json"
 import enWarehouse from "./locales/en/warehouse.json"
 import enAccounting from "./locales/en/accounting.json"
 import enUsers from "./locales/en/users.json"
@@ -44,6 +46,7 @@ import arProducts from "./locales/ar/products.json"
 import arSales from "./locales/ar/sales.json"
 import arPurchasing from "./locales/ar/purchasing.json"
 import arCustomers from "./locales/ar/customers.json"
+import arSuppliers from "./locales/ar/suppliers.json"
 import arWarehouse from "./locales/ar/warehouse.json"
 import arAccounting from "./locales/ar/accounting.json"
 import arUsers from "./locales/ar/users.json"
@@ -51,9 +54,9 @@ import arAudit from "./locales/ar/audit.json"
 import arDashboard from "./locales/ar/dashboard.json"
 
 const resources = {
-  tr: { common: trCommon, auth: trAuth, errors: trErrors, orders: trOrders, inventory: trInventory, products: trProducts, sales: trSales, purchasing: trPurchasing, customers: trCustomers, warehouse: trWarehouse, accounting: trAccounting, users: trUsers, audit: trAudit, dashboard: trDashboard },
-  en: { common: enCommon, auth: enAuth, errors: enErrors, orders: enOrders, inventory: enInventory, products: enProducts, sales: enSales, purchasing: enPurchasing, customers: enCustomers, warehouse: enWarehouse, accounting: enAccounting, users: enUsers, audit: enAudit, dashboard: enDashboard },
-  ar: { common: arCommon, auth: arAuth, errors: arErrors, orders: arOrders, inventory: arInventory, products: arProducts, sales: arSales, purchasing: arPurchasing, customers: arCustomers, warehouse: arWarehouse, accounting: arAccounting, users: arUsers, audit: arAudit, dashboard: arDashboard },
+  tr: { common: trCommon, auth: trAuth, errors: trErrors, orders: trOrders, inventory: trInventory, products: trProducts, sales: trSales, purchasing: trPurchasing, customers: trCustomers, suppliers: trSuppliers, warehouse: trWarehouse, accounting: trAccounting, users: trUsers, audit: trAudit, dashboard: trDashboard },
+  en: { common: enCommon, auth: enAuth, errors: enErrors, orders: enOrders, inventory: enInventory, products: enProducts, sales: enSales, purchasing: enPurchasing, customers: enCustomers, suppliers: enSuppliers, warehouse: enWarehouse, accounting: enAccounting, users: enUsers, audit: enAudit, dashboard: enDashboard },
+  ar: { common: arCommon, auth: arAuth, errors: arErrors, orders: arOrders, inventory: arInventory, products: arProducts, sales: arSales, purchasing: arPurchasing, customers: arCustomers, suppliers: arSuppliers, warehouse: arWarehouse, accounting: arAccounting, users: arUsers, audit: arAudit, dashboard: arDashboard },
 }
 
 i18n

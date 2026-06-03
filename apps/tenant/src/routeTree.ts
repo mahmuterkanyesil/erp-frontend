@@ -14,6 +14,12 @@ import { PurchaseOrderDetailPage } from "./pages/PurchaseOrderDetailPage"
 import { GoodsReceiptPage } from "./pages/GoodsReceiptPage"
 import { MaterialsPage } from "./pages/MaterialsPage"
 import { MaterialDetailPage } from "./pages/MaterialDetailPage"
+import { CustomersPage } from "./pages/customers/CustomersPage"
+import { NewCustomerPage } from "./pages/customers/NewCustomerPage"
+import { CustomerDetailPage } from "./pages/customers/CustomerDetailPage"
+import { SuppliersPage } from "./pages/suppliers/SuppliersPage"
+import { NewSupplierPage } from "./pages/suppliers/NewSupplierPage"
+import { SupplierDetailPage } from "./pages/suppliers/SupplierDetailPage"
 
 interface RouterContext {
   queryClient: QueryClient
@@ -83,6 +89,44 @@ const goodsReceiptRoute = createRoute({
   component: GoodsReceiptPage,
 })
 
+// ─── Customers ────────────────────────────────────────────────────────────────
+const customersRoute = createRoute({
+  getParentRoute: () => protectedLayout,
+  path: "/customers",
+  component: CustomersPage,
+})
+
+const newCustomerRoute = createRoute({
+  getParentRoute: () => protectedLayout,
+  path: "/customers/new",
+  component: NewCustomerPage,
+})
+
+const customerDetailRoute = createRoute({
+  getParentRoute: () => protectedLayout,
+  path: "/customers/$customerId",
+  component: CustomerDetailPage,
+})
+
+// ─── Suppliers ────────────────────────────────────────────────────────────────
+const suppliersRoute = createRoute({
+  getParentRoute: () => protectedLayout,
+  path: "/suppliers",
+  component: SuppliersPage,
+})
+
+const newSupplierRoute = createRoute({
+  getParentRoute: () => protectedLayout,
+  path: "/suppliers/new",
+  component: NewSupplierPage,
+})
+
+const supplierDetailRoute = createRoute({
+  getParentRoute: () => protectedLayout,
+  path: "/suppliers/$supplierId",
+  component: SupplierDetailPage,
+})
+
 // ─── Public routes ────────────────────────────────────────────────────────
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -117,6 +161,12 @@ export const routeTree = rootRoute.addChildren([
     purchasingMaterialDetailRoute,
     purchaseOrderDetailRoute,
     goodsReceiptRoute,
+    customersRoute,
+    newCustomerRoute,
+    customerDetailRoute,
+    suppliersRoute,
+    newSupplierRoute,
+    supplierDetailRoute,
   ]),
   loginRoute,
   forbiddenRoute,

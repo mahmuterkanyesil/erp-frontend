@@ -20,7 +20,15 @@ export type {
   Product,
   ProductVariant,
   Customer,
+  CustomerSegment,
+  CustomerAddress,
+  CreateCustomerRequest,
+  UpdateCustomerRequest,
+  CustomerOrderSummary,
   Supplier,
+  CreateSupplierRequest,
+  UpdateSupplierRequest,
+  SupplierPerformance,
   Warehouse,
   AccountingAccount,
   PurchaseOrderStatus,
@@ -49,3 +57,5 @@ export type {
 export { authService } from "./tenant/auth.service"
 export { orderService } from "./tenant/order.service"
 export { purchasingService } from "./tenant/purchasing.service"
+export { customerService } from "./tenant/customer.service"
+export { supplierService } from "./tenant/supplier.service"

@@ -126,15 +126,69 @@ export interface ProductVariant {
 
 // ─── Customers ───────────────────────────────────────────────────────────────
 
+export type CustomerSegment = "A" | "B" | "C"
+
+export interface CustomerAddress {
+  id: string
+  customer_id: string
+  street?: string
+  district?: string
+  city?: string
+  postal_code?: string
+  country?: string
+  is_default: boolean
+  label?: string
+}
+
 export interface Customer {
   id: string
   tenant_id: string
   name: string
+  tax_number?: string
+  tax_office?: string
   email?: string
   phone?: string
+  segment?: CustomerSegment
+  credit_limit?: string
+  payment_term_days?: number
+  billing_street?: string
+  billing_district?: string
   billing_city?: string
+  billing_postal_code?: string
   billing_country?: string
+  notes?: string
+  is_blacklisted: boolean
   status: "active" | "inactive"
+  created_at: string
+  updated_at?: string
+}
+
+export interface CreateCustomerRequest {
+  name: string
+  tax_number?: string
+  tax_office?: string
+  email?: string
+  phone?: string
+  segment?: CustomerSegment
+  credit_limit?: string
+  payment_term_days?: number
+  billing_street?: string
+  billing_district?: string
+  billing_city?: string
+  billing_postal_code?: string
+  billing_country?: string
+  notes?: string
+}
+
+export interface UpdateCustomerRequest extends Partial<CreateCustomerRequest> {
+  status?: "active" | "inactive"
+}
+
+export interface CustomerOrderSummary {
+  id: string
+  status: string
+  total_amount: string
+  currency: string
   created_at: string
 }
 
@@ -144,10 +198,46 @@ export interface Supplier {
   id: string
   tenant_id: string
   name: string
+  tax_number?: string
+  tax_office?: string
   email?: string
   phone?: string
+  payment_term_days?: number
+  billing_street?: string
+  billing_district?: string
+  billing_city?: string
+  billing_postal_code?: string
+  billing_country?: string
+  notes?: string
   status: "active" | "inactive"
   created_at: string
+  updated_at?: string
+}
+
+export interface CreateSupplierRequest {
+  name: string
+  tax_number?: string
+  tax_office?: string
+  email?: string
+  phone?: string
+  payment_term_days?: number
+  billing_street?: string
+  billing_district?: string
+  billing_city?: string
+  billing_postal_code?: string
+  billing_country?: string
+  notes?: string
+}
+
+export interface UpdateSupplierRequest extends Partial<CreateSupplierRequest> {
+  status?: "active" | "inactive"
+}
+
+export interface SupplierPerformance {
+  avg_lead_time_days?: number
+  completed_orders_count: number
+  total_orders_count: number
+  on_time_delivery_rate?: number
 }
 
 // ─── Warehouse ───────────────────────────────────────────────────────────────
