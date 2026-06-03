@@ -49,14 +49,6 @@ export function useSupplierAccount(id: string) {
   })
 }
 
-export function useSupplierPerformance(id: string) {
-  return useQuery({
-    queryKey: supplierKeys.performance(id),
-    queryFn: () => supplierService.getSupplierPerformance(id),
-    staleTime: 60_000,
-    enabled: !!id,
-  })
-}
 
 export function useCreateSupplier(onSuccess?: (id: string) => void) {
   const queryClient = useQueryClient()

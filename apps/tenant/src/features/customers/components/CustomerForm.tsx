@@ -33,7 +33,7 @@ export function CustomerForm({ defaultValues, customer, onSubmit, isPending, for
     resolver: zodResolver(customerSchema),
     defaultValues: customer
       ? {
-          name: customer.name,
+          company_name: customer.company_name ?? customer.name,
           tax_number: customer.tax_number ?? "",
           tax_office: customer.tax_office ?? "",
           email: customer.email ?? "",
@@ -41,11 +41,6 @@ export function CustomerForm({ defaultValues, customer, onSubmit, isPending, for
           segment: customer.segment,
           credit_limit: customer.credit_limit ?? "",
           payment_term_days: customer.payment_term_days,
-          billing_street: customer.billing_street ?? "",
-          billing_district: customer.billing_district ?? "",
-          billing_city: customer.billing_city ?? "",
-          billing_postal_code: customer.billing_postal_code ?? "",
-          billing_country: customer.billing_country ?? "",
           notes: customer.notes ?? "",
         }
       : defaultValues,
@@ -58,9 +53,9 @@ export function CustomerForm({ defaultValues, customer, onSubmit, isPending, for
           <Input
             label={t("companyName")}
             required
-            error={errors.name?.message}
+            error={errors.company_name?.message}
             disabled={isPending}
-            {...register("name")}
+            {...register("company_name")}
           />
         </div>
         <Input
@@ -112,41 +107,6 @@ export function CustomerForm({ defaultValues, customer, onSubmit, isPending, for
           disabled={isPending}
           {...register("payment_term_days")}
         />
-      </div>
-
-      <div className="flex flex-col gap-3">
-        <p className="text-sm font-500 text-text-main-light dark:text-text-main-dark border-b border-border-light dark:border-border-dark pb-2">
-          {t("billingAddress")}
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="md:col-span-2">
-            <Input
-              label={t("billingStreet")}
-              disabled={isPending}
-              {...register("billing_street")}
-            />
-          </div>
-          <Input
-            label={t("billingDistrict")}
-            disabled={isPending}
-            {...register("billing_district")}
-          />
-          <Input
-            label={t("billingCity")}
-            disabled={isPending}
-            {...register("billing_city")}
-          />
-          <Input
-            label={t("billingPostalCode")}
-            disabled={isPending}
-            {...register("billing_postal_code")}
-          />
-          <Input
-            label={t("billingCountry")}
-            disabled={isPending}
-            {...register("billing_country")}
-          />
-        </div>
       </div>
 
       <Textarea

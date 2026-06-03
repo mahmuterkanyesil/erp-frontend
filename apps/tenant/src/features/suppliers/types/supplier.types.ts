@@ -1,1 +1,1 @@
-export type { Supplier, CreateSupplierRequest, UpdateSupplierRequest, SupplierPerformance } from "@erp/api-client"
+export type { Supplier, CreateSupplierRequest, UpdateSupplierRequest } from "@erp/api-client"

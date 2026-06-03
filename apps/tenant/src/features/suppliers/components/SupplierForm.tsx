@@ -26,17 +26,14 @@ export function SupplierForm({ defaultValues, supplier, onSubmit, isPending, for
     resolver: zodResolver(supplierSchema),
     defaultValues: supplier
       ? {
-          name: supplier.name,
+          company_name: supplier.company_name ?? supplier.name,
           tax_number: supplier.tax_number ?? "",
           tax_office: supplier.tax_office ?? "",
           email: supplier.email ?? "",
           phone: supplier.phone ?? "",
           payment_term_days: supplier.payment_term_days,
-          billing_street: supplier.billing_street ?? "",
-          billing_district: supplier.billing_district ?? "",
-          billing_city: supplier.billing_city ?? "",
-          billing_postal_code: supplier.billing_postal_code ?? "",
-          billing_country: supplier.billing_country ?? "",
+          lead_time_days: supplier.lead_time_days,
+          currency: supplier.currency ?? "",
           notes: supplier.notes ?? "",
         }
       : defaultValues,
@@ -47,11 +44,11 @@ export function SupplierForm({ defaultValues, supplier, onSubmit, isPending, for
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-2">
           <Input
-            label={t("name")}
+            label={t("companyName")}
             required
-            error={errors.name?.message}
+            error={errors.company_name?.message}
             disabled={isPending}
-            {...register("name")}
+            {...register("company_name")}
           />
         </div>
         <Input
@@ -90,21 +87,20 @@ export function SupplierForm({ defaultValues, supplier, onSubmit, isPending, for
           disabled={isPending}
           {...register("payment_term_days")}
         />
-      </div>
-
-      <div className="flex flex-col gap-3">
-        <p className="text-sm font-500 text-text-main-light dark:text-text-main-dark border-b border-border-light dark:border-border-dark pb-2">
-          {t("address")}
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="md:col-span-2">
-            <Input label={t("street")} disabled={isPending} {...register("billing_street")} />
-          </div>
-          <Input label={t("district")} disabled={isPending} {...register("billing_district")} />
-          <Input label={t("city")} disabled={isPending} {...register("billing_city")} />
-          <Input label={t("postalCode")} disabled={isPending} {...register("billing_postal_code")} />
-          <Input label={t("country")} disabled={isPending} {...register("billing_country")} />
-        </div>
+        <Input
+          label={t("leadTimeDays")}
+          type="number"
+          min={0}
+          error={errors.lead_time_days?.message}
+          disabled={isPending}
+          {...register("lead_time_days")}
+        />
+        <Input
+          label={t("currency")}
+          error={errors.currency?.message}
+          disabled={isPending}
+          {...register("currency")}
+        />
       </div>
 
       <Textarea

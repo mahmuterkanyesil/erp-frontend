@@ -45,16 +45,6 @@ export function SupplierTable({ data, loading, onRowClick }: Props) {
       ),
     },
     {
-      key: "billing_city",
-      header: t("city"),
-      hideBelow: "lg",
-      cell: (row) => (
-        <span className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
-          {row.billing_city ?? "—"}
-        </span>
-      ),
-    },
-    {
       key: "status",
       header: tc("status"),
       cell: (row) => <SupplierStatusBadge status={row.status} />,

@@ -1,7 +1,6 @@
 export { SupplierStatusBadge } from "./components/SupplierStatusBadge"
 export { SupplierTable } from "./components/SupplierTable"
 export { SupplierForm } from "./components/SupplierForm"
-export { supplierKeys, useSuppliers, useSupplier, useSupplierOrders, useSupplierAccount, useSupplierPerformance, useCreateSupplier, useUpdateSupplier } from "./hooks/useSuppliers"
+export { supplierKeys, useSuppliers, useSupplier, useSupplierOrders, useSupplierAccount, useCreateSupplier, useUpdateSupplier } from "./hooks/useSuppliers"
 export { supplierSchema } from "./schemas/supplier.schema"
 export type { SupplierFormValues } from "./schemas/supplier.schema"
-export type { Supplier, CreateSupplierRequest, UpdateSupplierRequest, SupplierPerformance } from "./types/supplier.types"

@@ -93,20 +93,3 @@ export function useUpdateCustomer(id: string, onSuccess?: () => void) {
   })
 }
 
-export function useBlacklistCustomer(id: string, onSuccess?: () => void) {
-  const queryClient = useQueryClient()
-  const { t } = useTranslation("customers")
-
-  return useMutation({
-    mutationFn: () => customerService.blacklistCustomer(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: customerKeys.detail(id) })
-      queryClient.invalidateQueries({ queryKey: customerKeys.all })
-      toast.success(t("successBlacklisted"))
-      onSuccess?.()
-    },
-    onError: () => {
-      toast.error(t("title"))
-    },
-  })
-}

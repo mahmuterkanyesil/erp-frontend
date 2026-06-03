@@ -2,11 +2,11 @@ import { useState } from "react"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useTranslation } from "react-i18next"
 import { cn } from "@erp/utils"
-import { Button, PageHeader, Card, PermissionGate, Modal, ConfirmModal, TableSkeleton, EmptyState, Spinner } from "@erp/ui"
+import { Button, PageHeader, Card, PermissionGate, Modal, TableSkeleton, EmptyState, Spinner } from "@erp/ui"
 import { useLocaleFormat } from "@erp/hooks"
 import {
   useCustomer, useCustomerOrders, useCustomerAddresses, useCustomerAccount,
-  useUpdateCustomer, useBlacklistCustomer,
+  useUpdateCustomer,
   CustomerStatusBadge, CustomerForm,
 } from "@/features/customers"
 import type { CustomerFormValues } from "@/features/customers"
@@ -21,7 +21,6 @@ export function CustomerDetailPage() {
   const { formatDate, formatCurrency } = useLocaleFormat()
   const [activeTab, setActiveTab] = useState<TabKey>("orders")
   const [editOpen, setEditOpen] = useState(false)
-  const [blacklistOpen, setBlacklistOpen] = useState(false)
 
   const { data: customer, isLoading } = useCustomer(customerId)
   const { data: orders = [], isLoading: ordersLoading } = useCustomerOrders(customerId)
@@ -29,13 +28,15 @@ export function CustomerDetailPage() {
   const { data: account, isLoading: accountLoading } = useCustomerAccount(customerId)
 
   const updateCustomer = useUpdateCustomer(customerId, () => setEditOpen(false))
-  const blacklistCustomer = useBlacklistCustomer(customerId, () => setBlacklistOpen(false))
 
   function handleEditSubmit(values: CustomerFormValues) {
     updateCustomer.mutate({
-      ...values,
+      company_name: values.company_name,
+      tax_number: values.tax_number || undefined,
+      tax_office: values.tax_office || undefined,
       email: values.email || undefined,
-      payment_term_days: values.payment_term_days ?? undefined,
+      phone: values.phone || undefined,
+      notes: values.notes || undefined,
     })
   }
 
@@ -55,6 +56,8 @@ export function CustomerDetailPage() {
 
   if (!customer) return null
 
+  const primaryBalance = account?.balances?.[0]
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
@@ -65,44 +68,22 @@ export function CustomerDetailPage() {
           { label: customer.name },
         ]}
         actions={
-          <div className="flex items-center gap-2">
-            <PermissionGate permission="customers:update">
-              <Button variant="ghost" leftIcon="edit" onClick={() => setEditOpen(true)}>
-                {tc("edit")}
-              </Button>
-            </PermissionGate>
-            <PermissionGate permission="customers:approve">
-              <Button variant="danger" leftIcon="block" onClick={() => setBlacklistOpen(true)}>
-                {t("blacklistAction")}
-              </Button>
-            </PermissionGate>
-          </div>
+          <PermissionGate permission="customers:update">
+            <Button variant="ghost" leftIcon="edit" onClick={() => setEditOpen(true)}>
+              {tc("edit")}
+            </Button>
+          </PermissionGate>
         }
       />
-
-      {customer.is_blacklisted && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-danger/10 border border-danger/30 text-danger text-sm font-500">
-          <span className="material-symbols-outlined text-[20px]">block</span>
-          {t("blacklistedWarning")}
-        </div>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
         {/* Left column — info card */}
         <div className="flex flex-col gap-4">
           <Card className="p-5">
             <div className="flex items-start justify-between gap-3 mb-4">
-              <div className="flex flex-col gap-1">
-                <span className="text-lg font-700 text-text-main-light dark:text-text-main-dark">
-                  {customer.name}
-                </span>
-                {customer.billing_city && (
-                  <span className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
-                    {customer.billing_city}
-                    {customer.billing_country ? `, ${customer.billing_country}` : ""}
-                  </span>
-                )}
-              </div>
+              <span className="text-lg font-700 text-text-main-light dark:text-text-main-dark">
+                {customer.name}
+              </span>
               <CustomerStatusBadge status={customer.status} />
             </div>
 
@@ -178,7 +159,6 @@ export function CustomerDetailPage() {
 
         {/* Right column — tabs */}
         <div className="lg:col-span-2 flex flex-col">
-          {/* Tab bar */}
           <div className="flex border-b border-border-light dark:border-border-dark">
             {tabs.map((tab) => (
               <button
@@ -202,26 +182,20 @@ export function CustomerDetailPage() {
               orders.length === 0 ? <EmptyState title={t("noOrders")} /> :
               <div className="flex flex-col divide-y divide-border-light dark:divide-border-dark">
                 {orders.map((order) => (
-                  <button
+                  <div
                     key={order.id}
-                    onClick={() => navigate({ to: "/purchasing/$orderId", params: { orderId: order.id } })}
-                    className="flex items-center justify-between gap-3 py-3 hover:text-primary transition-colors text-start"
+                    className="flex items-center justify-between gap-3 py-3"
                   >
                     <div className="flex flex-col gap-0.5">
                       <span className="text-sm font-500 text-primary">#{order.id.slice(-8)}</span>
                       <span className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
-                        {formatDate(order.created_at)}
+                        {formatDate(order.createdAt)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-border-light dark:bg-border-dark text-text-secondary-light dark:text-text-secondary-dark">
-                        {order.status}
-                      </span>
-                      <span className="text-sm font-500 text-text-main-light dark:text-text-main-dark">
-                        {formatCurrency(order.total_amount, order.currency)}
-                      </span>
-                    </div>
-                  </button>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-border-light dark:bg-border-dark text-text-secondary-light dark:text-text-secondary-dark">
+                      {order.status}
+                    </span>
+                  </div>
                 ))}
               </div>
             )}
@@ -235,7 +209,9 @@ export function CustomerDetailPage() {
                     {t("balance")}
                   </span>
                   <span className="text-lg font-700 text-text-main-light dark:text-text-main-dark">
-                    {formatCurrency(account.balance, account.currency)}
+                    {primaryBalance
+                      ? formatCurrency(primaryBalance.net_balance, primaryBalance.currency)
+                      : "—"}
                   </span>
                 </div>
               </div>
@@ -251,6 +227,11 @@ export function CustomerDetailPage() {
                     className="flex items-start justify-between gap-3 p-3 rounded-lg border border-border-light dark:border-border-dark"
                   >
                     <div className="flex flex-col gap-0.5 text-sm text-text-main-light dark:text-text-main-dark">
+                      {addr.label && (
+                        <span className="text-xs font-500 text-text-secondary-light dark:text-text-secondary-dark">
+                          {addr.label}
+                        </span>
+                      )}
                       {addr.street && <span>{addr.street}</span>}
                       <span>
                         {[addr.district, addr.city, addr.postal_code].filter(Boolean).join(", ")}
@@ -292,18 +273,6 @@ export function CustomerDetailPage() {
           formId="customer-edit-form"
         />
       </Modal>
-
-      {/* Blacklist confirm */}
-      <ConfirmModal
-        open={blacklistOpen}
-        onClose={() => setBlacklistOpen(false)}
-        onConfirm={() => blacklistCustomer.mutate()}
-        title={t("blacklistTitle")}
-        description={t("blacklistDescription")}
-        confirmLabel={t("blacklistAction")}
-        danger
-        loading={blacklistCustomer.isPending}
-      />
     </div>
   )
 }

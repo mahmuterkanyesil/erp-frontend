@@ -124,120 +124,129 @@ export interface ProductVariant {
   status: "active" | "inactive"
 }
 
-// ─── Customers ───────────────────────────────────────────────────────────────
+// ─── Customers (Partner model) ───────────────────────────────────────────────
 
+export type PartnerType = "COMPANY" | "INDIVIDUAL"
 export type CustomerSegment = "A" | "B" | "C"
 
 export interface CustomerAddress {
   id: string
-  customer_id: string
+  label?: string
   street?: string
   district?: string
   city?: string
   postal_code?: string
   country?: string
   is_default: boolean
-  label?: string
 }
 
 export interface Customer {
   id: string
   tenant_id: string
+  partner_type: PartnerType
+  company_name?: string
+  first_name?: string
+  last_name?: string
+  /** Computed display name: company_name or first+last name */
   name: string
   tax_number?: string
   tax_office?: string
   email?: string
   phone?: string
-  segment?: CustomerSegment
-  credit_limit?: string
-  payment_term_days?: number
-  billing_street?: string
-  billing_district?: string
-  billing_city?: string
-  billing_postal_code?: string
-  billing_country?: string
-  notes?: string
-  is_blacklisted: boolean
   status: "active" | "inactive"
-  created_at: string
-  updated_at?: string
+  // Customer role fields (present when role data is available)
+  segment?: CustomerSegment
+  payment_term_days?: number
+  credit_limit?: string
+  notes?: string
 }
 
 export interface CreateCustomerRequest {
-  name: string
+  // Partner fields
+  partner_type?: PartnerType
+  company_name?: string
+  first_name?: string
+  last_name?: string
   tax_number?: string
   tax_office?: string
   email?: string
   phone?: string
+  // Customer role fields (used in 2nd step POST /roles/customer)
   segment?: CustomerSegment
-  credit_limit?: string
+  credit_amount?: string
+  credit_currency?: string
   payment_term_days?: number
-  billing_street?: string
-  billing_district?: string
-  billing_city?: string
-  billing_postal_code?: string
-  billing_country?: string
+  discount_rate?: string
   notes?: string
 }
 
-export interface UpdateCustomerRequest extends Partial<CreateCustomerRequest> {
-  status?: "active" | "inactive"
+export interface UpdateCustomerRequest {
+  company_name?: string
+  first_name?: string
+  last_name?: string
+  tax_number?: string
+  tax_office?: string
+  email?: string
+  phone?: string
+  notes?: string
 }
 
+// Orders from the Orders BC use camelCase fields
 export interface CustomerOrderSummary {
   id: string
   status: string
-  total_amount: string
-  currency: string
-  created_at: string
+  createdAt: string
 }
 
-// ─── Suppliers ───────────────────────────────────────────────────────────────
+// ─── Suppliers (Partner model) ───────────────────────────────────────────────
 
 export interface Supplier {
   id: string
   tenant_id: string
+  partner_type: PartnerType
+  company_name?: string
+  first_name?: string
+  last_name?: string
+  /** Computed display name: company_name or first+last name */
   name: string
   tax_number?: string
   tax_office?: string
   email?: string
   phone?: string
-  payment_term_days?: number
-  billing_street?: string
-  billing_district?: string
-  billing_city?: string
-  billing_postal_code?: string
-  billing_country?: string
-  notes?: string
   status: "active" | "inactive"
-  created_at: string
-  updated_at?: string
+  // Supplier role fields
+  payment_term_days?: number
+  lead_time_days?: number
+  currency?: string
+  notes?: string
 }
 
 export interface CreateSupplierRequest {
-  name: string
+  // Partner fields
+  partner_type?: PartnerType
+  company_name?: string
+  first_name?: string
+  last_name?: string
   tax_number?: string
   tax_office?: string
   email?: string
   phone?: string
+  // Supplier role fields (used in 2nd step POST /roles/supplier)
   payment_term_days?: number
-  billing_street?: string
-  billing_district?: string
-  billing_city?: string
-  billing_postal_code?: string
-  billing_country?: string
+  lead_time_days?: number
+  currency?: string
   notes?: string
 }
 
-export interface UpdateSupplierRequest extends Partial<CreateSupplierRequest> {
-  status?: "active" | "inactive"
-}
-
-export interface SupplierPerformance {
-  avg_lead_time_days?: number
-  completed_orders_count: number
-  total_orders_count: number
-  on_time_delivery_rate?: number
+export interface UpdateSupplierRequest {
+  company_name?: string
+  first_name?: string
+  last_name?: string
+  tax_number?: string
+  tax_office?: string
+  email?: string
+  phone?: string
+  notes?: string
 }
 
 // ─── Warehouse ───────────────────────────────────────────────────────────────
@@ -252,14 +261,21 @@ export interface Warehouse {
 
 // ─── Accounting ──────────────────────────────────────────────────────────────
 
+export interface AccountingBalance {
+  currency: string
+  total_debit: string
+  total_credit: string
+  net_balance: string
+}
+
 export interface AccountingAccount {
   id: string
+  tenant_id: string
   partner_id: string
-  partner_type: "customer" | "supplier"
-  currency: string
-  balance: string
+  account_type: "RECEIVABLE" | "PAYABLE"
   status: "active" | "frozen"
   created_at: string
+  balances: AccountingBalance[]
 }
 
 // ─── Purchasing ───────────────────────────────────────────────────────────────
@@ -305,11 +321,8 @@ export interface PurchaseOrder {
   expected_at: string
   lines: PurchaseOrderLine[]
   receipts?: GoodsReceipt[]
-  total_amount: string
-  currency: string
   notes?: string
-  created_at: string
-  updated_at: string
+  created_at?: string
 }
 
 export interface CreatePurchaseOrderRequest {

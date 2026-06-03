@@ -239,15 +239,6 @@ export function PurchaseOrderDetailPage() {
                   {formatDate(order.expected_at)}
                 </span>
               </div>
-              <div className="h-px bg-border-light dark:bg-border-dark" />
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
-                  {t("totalAmount")}
-                </span>
-                <span className="text-base font-700 text-text-main-light dark:text-text-main-dark">
-                  {order.total_amount} {order.currency}
-                </span>
-              </div>
               {order.notes && (
                 <div className="flex flex-col gap-1">
                   <span className="text-xs text-text-secondary-light dark:text-text-secondary-dark">

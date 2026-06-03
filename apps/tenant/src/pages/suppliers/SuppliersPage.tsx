@@ -5,7 +5,7 @@ import { cn } from "@erp/utils"
 import { Button, PageHeader, PermissionGate, Input } from "@erp/ui"
 import { useDebounce } from "@erp/hooks"
 import { useSuppliers, SupplierTable } from "@/features/suppliers"
-import type { Supplier } from "@/features/suppliers"
+import type { Supplier } from "@erp/api-client"
 
 type StatusFilter = "all" | "active" | "inactive"
 

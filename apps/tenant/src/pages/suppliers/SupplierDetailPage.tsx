@@ -2,16 +2,16 @@ import { useState } from "react"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useTranslation } from "react-i18next"
 import { cn } from "@erp/utils"
-import { Button, PageHeader, Card, PermissionGate, Modal, TableSkeleton, EmptyState, Spinner, StatCard } from "@erp/ui"
+import { Button, PageHeader, Card, PermissionGate, Modal, TableSkeleton, EmptyState, Spinner } from "@erp/ui"
 import { useLocaleFormat } from "@erp/hooks"
 import {
-  useSupplier, useSupplierOrders, useSupplierAccount, useSupplierPerformance,
+  useSupplier, useSupplierOrders, useSupplierAccount,
   useUpdateSupplier,
   SupplierStatusBadge, SupplierForm,
 } from "@/features/suppliers"
 import type { SupplierFormValues } from "@/features/suppliers"
 
-type TabKey = "orders" | "account" | "performance"
+type TabKey = "orders" | "account"
 
 export function SupplierDetailPage() {
   const { supplierId } = useParams({ from: "/protected/suppliers/$supplierId" })
@@ -25,22 +25,23 @@ export function SupplierDetailPage() {
   const { data: supplier, isLoading } = useSupplier(supplierId)
   const { data: orders = [], isLoading: ordersLoading } = useSupplierOrders(supplierId)
   const { data: account, isLoading: accountLoading } = useSupplierAccount(supplierId)
-  const { data: performance, isLoading: perfLoading } = useSupplierPerformance(supplierId)
 
   const updateSupplier = useUpdateSupplier(supplierId, () => setEditOpen(false))
 
   function handleEditSubmit(values: SupplierFormValues) {
     updateSupplier.mutate({
-      ...values,
+      company_name: values.company_name,
+      tax_number: values.tax_number || undefined,
+      tax_office: values.tax_office || undefined,
       email: values.email || undefined,
-      payment_term_days: values.payment_term_days ?? undefined,
+      phone: values.phone || undefined,
+      notes: values.notes || undefined,
     })
   }
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: "orders", label: t("ordersTab") },
     { key: "account", label: t("accountTab") },
-    { key: "performance", label: t("performanceTab") },
   ]
 
   if (isLoading) {
@@ -52,6 +53,8 @@ export function SupplierDetailPage() {
   }
 
   if (!supplier) return null
+
+  const primaryBalance = account?.balances?.[0]
 
   return (
     <div className="flex flex-col gap-4">
@@ -100,13 +103,6 @@ export function SupplierDetailPage() {
                   <span className="material-symbols-outlined text-[18px]">receipt_long</span>
                   {supplier.tax_number}
                   {supplier.tax_office ? ` — ${supplier.tax_office}` : ""}
-                </div>
-              )}
-              {supplier.billing_city && (
-                <div className="flex items-center gap-2 text-text-secondary-light dark:text-text-secondary-dark">
-                  <span className="material-symbols-outlined text-[18px]">location_on</span>
-                  {supplier.billing_city}
-                  {supplier.billing_country ? `, ${supplier.billing_country}` : ""}
                 </div>
               )}
             </div>
@@ -170,17 +166,12 @@ export function SupplierDetailPage() {
                     <div className="flex flex-col gap-0.5">
                       <span className="text-sm font-500 text-primary">#{order.id.slice(-8)}</span>
                       <span className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
-                        {formatDate(order.created_at)}
+                        {formatDate(order.expected_at)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-border-light dark:bg-border-dark text-text-secondary-light dark:text-text-secondary-dark">
-                        {order.status}
-                      </span>
-                      <span className="text-sm font-500 text-text-main-light dark:text-text-main-dark">
-                        {order.total_amount} {order.currency}
-                      </span>
-                    </div>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-border-light dark:bg-border-dark text-text-secondary-light dark:text-text-secondary-dark">
+                      {order.status}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -195,45 +186,12 @@ export function SupplierDetailPage() {
                     {t("balance")}
                   </span>
                   <span className="text-lg font-700 text-text-main-light dark:text-text-main-dark">
-                    {formatCurrency(account.balance, account.currency)}
+                    {primaryBalance
+                      ? formatCurrency(primaryBalance.net_balance, primaryBalance.currency)
+                      : "—"}
                   </span>
                 </div>
               </div>
-            )}
-
-            {activeTab === "performance" && (
-              perfLoading ? <Spinner /> :
-              !performance ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <StatCard label={t("completedOrdersCount")} value="—" icon="check_circle" />
-                  <StatCard label={t("totalOrdersCount")} value="—" icon="shopping_cart" />
-                  <StatCard label={t("avgLeadTimeDays")} value="—" icon="schedule" />
-                  <StatCard label={t("onTimeDeliveryRate")} value="—" icon="verified" />
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <StatCard
-                    label={t("completedOrdersCount")}
-                    value={String(performance.completed_orders_count)}
-                    icon="check_circle"
-                  />
-                  <StatCard
-                    label={t("totalOrdersCount")}
-                    value={String(performance.total_orders_count)}
-                    icon="shopping_cart"
-                  />
-                  <StatCard
-                    label={t("avgLeadTimeDays")}
-                    value={performance.avg_lead_time_days ? `${performance.avg_lead_time_days} ${t("days")}` : "—"}
-                    icon="schedule"
-                  />
-                  <StatCard
-                    label={t("onTimeDeliveryRate")}
-                    value={performance.on_time_delivery_rate ? `${performance.on_time_delivery_rate}%` : "—"}
-                    icon="verified"
-                  />
-                </div>
-              )
             )}
           </Card>
         </div>
