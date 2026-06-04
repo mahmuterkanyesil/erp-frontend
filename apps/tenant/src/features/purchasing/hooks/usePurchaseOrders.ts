@@ -103,42 +103,6 @@ export function useCancelOrder(onSuccess?: () => void) {
   })
 }
 
-export function useUpdateOrderLine(orderId: string, onSuccess?: () => void) {
-  const queryClient = useQueryClient()
-  const { t } = useTranslation("purchasing")
-
-  return useMutation({
-    mutationFn: ({ lineId, body }: { lineId: string; body: { quantity: number; unit_price: string } }) =>
-      purchasingService.updateOrderLine(orderId, lineId, body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.detail(orderId) })
-      toast.success(t("successLineUpdated"))
-      onSuccess?.()
-    },
-    onError: () => {
-      toast.error(t("title"))
-    },
-  })
-}
-
-export function useDeleteOrderLine(orderId: string, onSuccess?: () => void) {
-  const queryClient = useQueryClient()
-  const { t } = useTranslation("purchasing")
-
-  return useMutation({
-    mutationFn: (lineId: string) => purchasingService.deleteOrderLine(orderId, lineId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.detail(orderId) })
-      queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.all })
-      toast.success(t("successLineDeleted"))
-      onSuccess?.()
-    },
-    onError: () => {
-      toast.error(t("title"))
-    },
-  })
-}
-
 export function useCreateReceipt(orderId: string, onSuccess?: () => void) {
   const queryClient = useQueryClient()
   const { t } = useTranslation("purchasing")

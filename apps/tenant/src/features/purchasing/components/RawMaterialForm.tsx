@@ -43,8 +43,8 @@ export function RawMaterialForm({ onSubmit, isLoading, onCancel }: Props) {
         />
         <Input
           label={t("sku")}
-          {...register("sku")}
-          error={errors.sku?.message}
+          {...register("code")}
+          error={errors.code?.message}
         />
         <Select
           label={t("materialType")}
@@ -60,19 +60,7 @@ export function RawMaterialForm({ onSubmit, isLoading, onCancel }: Props) {
           {...register("unit")}
           error={errors.unit?.message}
         />
-        <Input
-          label={t("minStockLevel")}
-          type="number"
-          step="0.001"
-          {...register("min_stock_level")}
-          error={errors.min_stock_level?.message}
-        />
       </div>
-      <Input
-        label={t("description")}
-        {...register("description")}
-        error={errors.description?.message}
-      />
       <div className="flex justify-end gap-2 pt-2">
         {onCancel && (
           <Button type="button" variant="ghost" onClick={onCancel}>

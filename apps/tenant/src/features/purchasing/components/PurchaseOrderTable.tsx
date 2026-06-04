@@ -29,7 +29,7 @@ export function PurchaseOrderTable({ data, loading, onRowClick }: Props) {
       header: t("supplier"),
       cell: (row) => (
         <span className="text-sm text-text-main-light dark:text-text-main-dark">
-          {row.supplier_name ?? row.supplier_id}
+          {row.supplier_id}
         </span>
       ),
     },
@@ -63,7 +63,7 @@ export function PurchaseOrderTable({ data, loading, onRowClick }: Props) {
           <div className="flex flex-col gap-1">
             <span className="font-500 text-primary text-sm">#{row.id.slice(-8)}</span>
             <span className="text-sm text-text-main-light dark:text-text-main-dark">
-              {row.supplier_name ?? row.supplier_id}
+              {row.supplier_id}
             </span>
             <span className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
               {formatDate(row.expected_at)}

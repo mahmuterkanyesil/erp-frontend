@@ -13,14 +13,14 @@ export interface LoginRequest {
 
 export interface UserResult {
   id: string
-  tenant_id: string
+  tenantID: string
   email: string
-  first_name: string
-  last_name: string
-  role_ids: string[]
-  access_level: "all" | "store"
-  store_ids: string[]
-  status: "active" | "locked"
+  firstName: string
+  lastName: string
+  roleIDs: string[]
+  accessLevel: string
+  storeIDs: string[]
+  status: string
 }
 
 export interface LoginResponse {
@@ -91,11 +91,10 @@ export interface StockItem {
   id: string
   product_id: string
   warehouse_id: string
-  quantity: number
-  reserved_quantity: number
-  available_quantity: number
+  total: number
+  reserved: number
+  available: number
   unit: string
-  updated_at: string
 }
 
 // ─── Products / Catalog ──────────────────────────────────────────────────────
@@ -294,16 +293,12 @@ export type MaterialType =
   | "semi_finished"
   | "other"
 
-export type PurchaseSource = "MANUAL" | "ORDER"
 
 export interface PurchaseOrderLine {
   id: string
   material_id: string
-  material_name: string
-  material_code: string
-  ordered_qty_value: number
-  ordered_qty_unit: string
-  received_qty_value: number
+  quantity: number
+  unit: string
   unit_price_amount: string
   unit_price_currency: string
   status: string
@@ -313,23 +308,21 @@ export interface PurchaseOrder {
   id: string
   tenant_id: string
   supplier_id: string
-  supplier_name?: string
   warehouse_id: string
-  warehouse_name?: string
-  source: PurchaseSource
+  source: string
+  source_ref?: string
   status: PurchaseOrderStatus
   expected_at: string
   lines: PurchaseOrderLine[]
-  receipts?: GoodsReceipt[]
   notes?: string
-  created_at?: string
 }
 
 export interface CreatePurchaseOrderRequest {
   supplier_id: string
   warehouse_id: string
-  source: PurchaseSource
-  expected_at: string
+  source: string
+  source_ref?: string
+  expected_date: string
   notes?: string
 }
 
@@ -337,7 +330,8 @@ export interface AddPurchaseOrderLineRequest {
   material_id: string
   quantity: number
   unit: string
-  unit_price: string
+  unit_price_amount: string
+  unit_price_currency: string
 }
 
 export interface GoodsReceiptLine {
@@ -373,58 +367,27 @@ export interface RawMaterial {
   id: string
   tenant_id: string
   name: string
-  sku: string
-  material_type: MaterialType
+  code: string
+  material_type: string
   unit: string
-  description?: string
-  preferred_supplier_id?: string
-  min_stock_level?: number
-  current_stock?: number
-  created_at: string
+  lead_time_days?: number
+  min_order_qty?: number
+  min_order_qty_unit?: string
+  supplier_id?: string
+  status: string
 }
 
 export interface CreateRawMaterialRequest {
   name: string
-  sku: string
-  material_type: MaterialType
+  code: string
+  material_type: string
   unit: string
-  description?: string
-  min_stock_level?: number
+  lead_time_days?: number
+  min_order_qty?: number
+  min_order_qty_unit?: string
 }
 
 export interface UpdatePreferredSupplierRequest {
   supplier_id: string
 }
 
-export interface MaterialStats {
-  current_stock: number
-  min_stock_level?: number
-  is_below_min: boolean
-  pending_orders_count: number
-  pending_orders_qty: number
-  last_receipt_at?: string
-}
-
-export interface UpdateOrderLineRequest {
-  quantity: number
-  unit_price: string
-}
-
-export interface ReplenishStockRequest {
-  quantity: number
-  notes?: string
-}
-
-export interface AdjustStockRequest {
-  delta: number
-  reason: string
-}
-
-export interface BulkCreateMaterialsRequest {
-  materials: CreateRawMaterialRequest[]
-}
-
-export interface BulkCreateMaterialsResponse {
-  created: RawMaterial[]
-  errors: Array<{ index: number; error: string }>
-}

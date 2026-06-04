@@ -20,12 +20,12 @@ const MATERIAL_TYPES: MaterialType[] = [
 
 interface RowState {
   name: string
-  sku: string
+  code: string
   material_type: MaterialType
   unit: string
 }
 
-const EMPTY_ROW: RowState = { name: "", sku: "", material_type: "other", unit: "" }
+const EMPTY_ROW: RowState = { name: "", code: "", material_type: "other", unit: "" }
 
 export function BulkCreateForm({ onSubmit, isLoading, onCancel }: Props) {
   const { t } = useTranslation("purchasing")
@@ -53,19 +53,19 @@ export function BulkCreateForm({ onSubmit, isLoading, onCancel }: Props) {
   }
 
   function handleSubmit() {
-    const valid = rows.filter((r) => r.name.trim() && r.sku.trim() && r.unit.trim())
+    const valid = rows.filter((r) => r.name.trim() && r.code.trim() && r.unit.trim())
     if (valid.length === 0) return
     onSubmit(
       valid.map((r) => ({
         name: r.name.trim(),
-        sku: r.sku.trim(),
+        code: r.code.trim(),
         material_type: r.material_type,
         unit: r.unit.trim(),
       })),
     )
   }
 
-  const hasValid = rows.some((r) => r.name.trim() && r.sku.trim() && r.unit.trim())
+  const hasValid = rows.some((r) => r.name.trim() && r.code.trim() && r.unit.trim())
 
   return (
     <div className="flex flex-col gap-4">
@@ -82,10 +82,10 @@ export function BulkCreateForm({ onSubmit, isLoading, onCancel }: Props) {
               onChange={(e) => updateRow(idx, "name", e.target.value)}
             />
             <Input
-              label={idx === 0 ? t("sku") : undefined}
-              placeholder={t("sku")}
-              value={row.sku}
-              onChange={(e) => updateRow(idx, "sku", e.target.value)}
+              label={idx === 0 ? t("code") : undefined}
+              placeholder={t("code")}
+              value={row.code}
+              onChange={(e) => updateRow(idx, "code", e.target.value)}
             />
             <Select
               label={idx === 0 ? t("materialType") : undefined}

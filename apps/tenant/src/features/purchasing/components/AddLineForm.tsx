@@ -20,6 +20,12 @@ const unitOptions: SelectOption[] = [
   { value: "m", label: "Metre" },
 ]
 
+const currencyOptions: SelectOption[] = [
+  { value: "TRY", label: "TRY" },
+  { value: "USD", label: "USD" },
+  { value: "EUR", label: "EUR" },
+]
+
 export function AddLineForm({ materials, onSubmit, isLoading, onCancel }: Props) {
   const { t } = useTranslation("purchasing")
   const { t: tc } = useTranslation("common")
@@ -59,12 +65,21 @@ export function AddLineForm({ materials, onSubmit, isLoading, onCancel }: Props)
           error={errors.unit?.message}
         />
       </div>
-      <Input
-        label={t("unitPrice")}
-        placeholder="0.00"
-        {...register("unit_price")}
-        error={errors.unit_price?.message}
-      />
+      <div className="grid grid-cols-2 gap-4">
+        <Input
+          label={t("unitPrice")}
+          placeholder="0.00"
+          {...register("unit_price_amount")}
+          error={errors.unit_price_amount?.message}
+        />
+        <Select
+          label={t("currency")}
+          options={currencyOptions}
+          value={watch("unit_price_currency") ?? "TRY"}
+          onChange={(e) => setValue("unit_price_currency", e.target.value)}
+          error={errors.unit_price_currency?.message}
+        />
+      </div>
       <div className="flex justify-end gap-2 pt-2">
         {onCancel && (
           <Button type="button" variant="ghost" onClick={onCancel}>

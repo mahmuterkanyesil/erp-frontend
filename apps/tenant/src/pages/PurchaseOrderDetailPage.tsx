@@ -19,14 +19,10 @@ import {
   useConfirmOrder,
   useCancelOrder,
   useAddOrderLine,
-  useUpdateOrderLine,
-  useDeleteOrderLine,
   PurchaseOrderStatusBadge,
   AddLineForm,
-  UpdateOrderLineForm,
 } from "@/features/purchasing"
-import type { AddOrderLineValues, UpdateOrderLineValues } from "@/features/purchasing"
-import type { PurchaseOrderLine } from "@erp/api-client"
+import type { AddOrderLineValues } from "@/features/purchasing"
 import type { PurchaseOrderStatus } from "@erp/api-client"
 
 const TIMELINE_STEPS: PurchaseOrderStatus[] = [
@@ -49,20 +45,12 @@ export function PurchaseOrderDetailPage() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [showCancel, setShowCancel] = useState(false)
   const [cancelReason, setCancelReason] = useState("")
-  const [editingLine, setEditingLine] = useState<PurchaseOrderLine | null>(null)
-  const [deletingLineId, setDeletingLineId] = useState<string | null>(null)
 
   const { data: order, isLoading } = usePurchaseOrder(orderId)
   const { mutate: confirmOrder, isPending: isConfirming } = useConfirmOrder()
   const { mutate: cancelOrder, isPending: isCancelling } = useCancelOrder()
   const { mutate: addLine, isPending: isAddingLine } = useAddOrderLine(orderId, () =>
     setShowAddLine(false),
-  )
-  const { mutate: updateLine, isPending: isUpdatingLine } = useUpdateOrderLine(orderId, () =>
-    setEditingLine(null),
-  )
-  const { mutate: deleteLine, isPending: isDeletingLine } = useDeleteOrderLine(orderId, () =>
-    setDeletingLineId(null),
   )
 
   if (isLoading) return <FormSkeleton />
@@ -124,7 +112,6 @@ export function PurchaseOrderDetailPage() {
         }
       />
 
-      {/* Status timeline / cancelled banner */}
       {isCancelled ? (
         <Card>
           <div className="flex items-center gap-3 py-2">
@@ -141,10 +128,8 @@ export function PurchaseOrderDetailPage() {
             {TIMELINE_STEPS.map((step, idx) => {
               const isCompleted = idx < currentStep
               const isCurrent = idx === currentStep
-
               return (
                 <div key={step} className="flex-1 flex flex-col items-center relative">
-                  {/* connector line */}
                   {idx < TIMELINE_STEPS.length - 1 && (
                     <div
                       className={cn(
@@ -155,7 +140,6 @@ export function PurchaseOrderDetailPage() {
                       )}
                     />
                   )}
-                  {/* circle */}
                   <div
                     className={cn(
                       "relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-xs font-700 mb-2",
@@ -172,7 +156,6 @@ export function PurchaseOrderDetailPage() {
                       idx + 1
                     )}
                   </div>
-                  {/* label */}
                   <span
                     className={cn(
                       "text-xs text-center leading-tight",
@@ -192,9 +175,7 @@ export function PurchaseOrderDetailPage() {
         </Card>
       )}
 
-      {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left column — summary + actions */}
         <div className="lg:col-span-1 flex flex-col gap-4">
           <Card>
             <CardHeader>
@@ -212,7 +193,7 @@ export function PurchaseOrderDetailPage() {
                   {t("supplier")}
                 </span>
                 <span className="text-sm font-500 text-text-main-light dark:text-text-main-dark">
-                  {order.supplier_name ?? order.supplier_id}
+                  {order.supplier_id}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
@@ -220,7 +201,7 @@ export function PurchaseOrderDetailPage() {
                   {t("warehouse")}
                 </span>
                 <span className="text-sm text-text-main-light dark:text-text-main-dark">
-                  {order.warehouse_name ?? order.warehouse_id}
+                  {order.warehouse_id}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
@@ -253,9 +234,7 @@ export function PurchaseOrderDetailPage() {
           </Card>
         </div>
 
-        {/* Right column — lines + receipt history */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          {/* Lines */}
+        <div className="lg:col-span-2">
           <Card>
             <CardHeader>
               <CardTitle>{t("lines")}</CardTitle>
@@ -283,15 +262,11 @@ export function PurchaseOrderDetailPage() {
                         {t("quantity")}
                       </th>
                       <th className="text-end py-2 pe-4 font-500 text-text-secondary-light dark:text-text-secondary-dark hidden md:table-cell">
-                        {t("receivedQuantity")}
-                      </th>
-                      <th className="text-end py-2 pe-4 font-500 text-text-secondary-light dark:text-text-secondary-dark hidden md:table-cell">
                         {t("unitPrice")}
                       </th>
                       <th className="text-end py-2 pe-4 font-500 text-text-secondary-light dark:text-text-secondary-dark">
                         {t("totalPrice")}
                       </th>
-                      {canModify && <th className="py-2 w-16" />}
                     </tr>
                   </thead>
                   <tbody>
@@ -301,44 +276,18 @@ export function PurchaseOrderDetailPage() {
                         className="border-b border-border-light dark:border-border-dark last:border-0"
                       >
                         <td className="py-3 pe-4 text-text-main-light dark:text-text-main-dark">
-                          <div>{line.material_name}</div>
-                          <div className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
-                            {line.material_code}
-                          </div>
+                          {line.material_id}
                         </td>
                         <td className="py-3 pe-4 text-end text-text-main-light dark:text-text-main-dark">
-                          {line.ordered_qty_value} {line.ordered_qty_unit}
-                        </td>
-                        <td className="py-3 pe-4 text-end text-text-secondary-light dark:text-text-secondary-dark hidden md:table-cell">
-                          {line.received_qty_value} {line.ordered_qty_unit}
+                          {line.quantity} {line.unit}
                         </td>
                         <td className="py-3 pe-4 text-end text-text-secondary-light dark:text-text-secondary-dark hidden md:table-cell">
                           {line.unit_price_amount} {line.unit_price_currency}
                         </td>
                         <td className="py-3 pe-4 text-end font-500 text-text-main-light dark:text-text-main-dark">
-                          {(line.ordered_qty_value * parseFloat(line.unit_price_amount)).toFixed(2)}{" "}
+                          {(line.quantity * parseFloat(line.unit_price_amount)).toFixed(2)}{" "}
                           {line.unit_price_currency}
                         </td>
-                        {canModify && (
-                          <td className="py-3 text-end">
-                            <div className="flex items-center justify-end gap-1">
-                              <button
-                                onClick={() => setEditingLine(line)}
-                                className="text-text-secondary-light dark:text-text-secondary-dark hover:text-primary transition-colors"
-                                title={t("editLine")}
-                              >
-                                <span className="material-symbols-outlined text-[18px]">edit</span>
-                              </button>
-                              <button
-                                onClick={() => setDeletingLineId(line.id)}
-                                className="text-text-secondary-light dark:text-text-secondary-dark hover:text-danger transition-colors"
-                                title={t("deleteLine")}
-                              >
-                                <span className="material-symbols-outlined text-[18px]">delete</span>
-                              </button>
-                            </div>
-                          </td>
-                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -346,87 +295,9 @@ export function PurchaseOrderDetailPage() {
               </div>
             )}
           </Card>
-
-          {/* Receipt history */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("receiptsHistory")}</CardTitle>
-            </CardHeader>
-            {!order.receipts || order.receipts.length === 0 ? (
-              <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark py-4 text-center">
-                {t("noReceipts")}
-              </p>
-            ) : (
-              <div className="flex flex-col gap-3 mt-2">
-                {order.receipts.map((receipt) => (
-                  <div
-                    key={receipt.id}
-                    className="p-3 rounded-lg border border-border-light dark:border-border-dark"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-500 text-text-main-light dark:text-text-main-dark">
-                        #{receipt.id.slice(-8)}
-                      </span>
-                      <span className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
-                        {formatDate(receipt.received_at)}
-                      </span>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      {receipt.lines.map((rl) => (
-                        <div key={rl.id} className="flex items-center justify-between text-sm">
-                          <span className="text-text-main-light dark:text-text-main-dark">
-                            {rl.material_name ?? rl.material_id}
-                          </span>
-                          <span className="text-text-secondary-light dark:text-text-secondary-dark">
-                            {rl.quantity} {rl.unit}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    {receipt.notes && (
-                      <p className="text-xs text-text-secondary-light dark:text-text-secondary-dark mt-2">
-                        {receipt.notes}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
         </div>
       </div>
 
-      {/* Edit line modal */}
-      <Modal
-        open={editingLine !== null}
-        onClose={() => setEditingLine(null)}
-        title={t("editLine")}
-      >
-        {editingLine && (
-          <UpdateOrderLineForm
-            line={editingLine}
-            onSubmit={(values: UpdateOrderLineValues) =>
-              updateLine({ lineId: editingLine.id, body: values })
-            }
-            isLoading={isUpdatingLine}
-            onCancel={() => setEditingLine(null)}
-          />
-        )}
-      </Modal>
-
-      {/* Delete line confirm */}
-      <ConfirmModal
-        open={deletingLineId !== null}
-        onClose={() => setDeletingLineId(null)}
-        onConfirm={() => {
-          if (deletingLineId) deleteLine(deletingLineId)
-        }}
-        title={t("deleteLineTitle")}
-        danger
-        loading={isDeletingLine}
-      />
-
-      {/* Add line modal */}
       <Modal open={showAddLine} onClose={() => setShowAddLine(false)} title={t("addLine")}>
         <AddLineForm
           materials={EMPTY_MATERIALS}
@@ -436,7 +307,6 @@ export function PurchaseOrderDetailPage() {
         />
       </Modal>
 
-      {/* Confirm modal */}
       <ConfirmModal
         open={showConfirm}
         onClose={() => setShowConfirm(false)}
@@ -448,7 +318,6 @@ export function PurchaseOrderDetailPage() {
         loading={isConfirming}
       />
 
-      {/* Cancel modal with required reason */}
       <Modal
         open={showCancel}
         onClose={() => {
