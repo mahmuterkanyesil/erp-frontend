@@ -92,7 +92,7 @@ function SidebarContent({
                 Plastik ERP
               </p>
               <p className="text-xs text-text-secondary-light dark:text-text-secondary-dark leading-tight">
-                {user?.tenant_id ?? ""}
+                {user?.tenantID ?? ""}
               </p>
             </div>
           </div>
@@ -129,12 +129,12 @@ function SidebarContent({
             {/* Avatar initials */}
             <div className="size-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
               <span className="text-xs font-700 text-primary">
-                {user.first_name?.[0]}{user.last_name?.[0]}
+                {user.firstName?.[0]}{user.lastName?.[0]}
               </span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-700 text-text-main-light dark:text-text-main-dark truncate">
-                {user.first_name} {user.last_name}
+                {user.firstName} {user.lastName}
               </p>
               <p className="text-xs text-text-secondary-light dark:text-text-secondary-dark truncate">
                 {user.email}

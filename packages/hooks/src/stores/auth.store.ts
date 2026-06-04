@@ -35,12 +35,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   setAuth: ({ user, accessToken, refreshToken }) => {
     // Persist refresh token and tenantId to localStorage
     localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
-    localStorage.setItem(TENANT_ID_KEY, user.tenant_id)
+    localStorage.setItem(TENANT_ID_KEY, user.tenantID)
 
     set({
       user,
       accessToken,
-      tenantId: user.tenant_id,
+      tenantId: user.tenantID,
     })
   },
 
