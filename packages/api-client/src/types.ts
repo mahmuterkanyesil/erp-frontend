@@ -253,8 +253,9 @@ export interface UpdateSupplierRequest {
 export interface Warehouse {
   id: string
   tenant_id: string
+  code: string
   name: string
-  address?: string
+  warehouse_type?: string
   status: "active" | "inactive"
 }
 

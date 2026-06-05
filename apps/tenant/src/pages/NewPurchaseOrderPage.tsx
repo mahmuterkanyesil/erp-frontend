@@ -1,20 +1,27 @@
 import { useNavigate } from "@tanstack/react-router"
 import { useTranslation } from "react-i18next"
 import { Card, PageHeader } from "@erp/ui"
-import { PurchaseOrderForm, useCreatePurchaseOrder } from "@/features/purchasing"
+import { PurchaseOrderForm, useCreatePurchaseOrder, useWarehouses } from "@/features/purchasing"
 import type { CreatePurchaseOrderValues } from "@/features/purchasing"
-
-// Supplier/warehouse seçenekleri — ilgili modüller tamamlandığında gerçek query ile değiştirilecek
-const EMPTY_OPTIONS = [{ value: "", label: "—" }]
+import { useSuppliers } from "@/features/suppliers"
 
 export function NewPurchaseOrderPage() {
   const { t } = useTranslation("purchasing")
   const { t: tc } = useTranslation("common")
   const navigate = useNavigate()
 
+  const { data: suppliers = [] } = useSuppliers()
+  const { data: warehouses = [] } = useWarehouses()
+
   const { mutate, isPending } = useCreatePurchaseOrder(() => {
     navigate({ to: "/purchasing" })
   })
+
+  const supplierOptions = suppliers.map((s) => ({ value: s.id, label: s.name }))
+  const warehouseOptions = warehouses.map((w) => ({
+    value: w.id,
+    label: w.code ? `${w.name} (${w.code})` : w.name,
+  }))
 
   function handleSubmit(values: CreatePurchaseOrderValues) {
     mutate(values)
@@ -32,8 +39,8 @@ export function NewPurchaseOrderPage() {
       />
       <Card className="max-w-2xl">
         <PurchaseOrderForm
-          suppliers={EMPTY_OPTIONS}
-          warehouses={EMPTY_OPTIONS}
+          suppliers={supplierOptions}
+          warehouses={warehouseOptions}
           onSubmit={handleSubmit}
           isLoading={isPending}
           onCancel={() => navigate({ to: "/purchasing" })}

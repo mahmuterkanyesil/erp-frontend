@@ -44,6 +44,9 @@ export const purchasingService = {
   createMaterial: (body: CreateRawMaterialRequest): Promise<void> =>
     tenantHttp.post("/api/v1/purchasing/materials", body).then(() => undefined),
 
+  getMaterials: (): Promise<RawMaterial[]> =>
+    tenantHttp.get<RawMaterial[]>("/api/v1/purchasing/materials").then((r) => r.data),
+
   getMaterial: (id: string): Promise<RawMaterial> =>
     tenantHttp.get<RawMaterial>(`/api/v1/purchasing/materials/${id}`).then((r) => r.data),
 

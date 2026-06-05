@@ -9,7 +9,16 @@ import type {
 
 export const rawMaterialKeys = {
   all: ["purchasing", "materials"] as const,
+  list: () => [...rawMaterialKeys.all, "list"] as const,
   detail: (id: string) => [...rawMaterialKeys.all, "detail", id] as const,
+}
+
+export function useRawMaterials() {
+  return useQuery({
+    queryKey: rawMaterialKeys.list(),
+    queryFn: () => purchasingService.getMaterials(),
+    staleTime: 30_000,
+  })
 }
 
 export function useRawMaterial(id: string) {

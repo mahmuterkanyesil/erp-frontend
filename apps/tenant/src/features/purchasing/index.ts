@@ -23,10 +23,14 @@ export {
 // Hooks — materials
 export {
   rawMaterialKeys,
+  useRawMaterials,
   useRawMaterial,
   useCreateRawMaterial,
   useUpdatePreferredSupplier,
 } from "./hooks/useRawMaterials"
+
+// Hooks — warehouses
+export { warehouseKeys, useWarehouses } from "./hooks/useWarehouses"
 
 // Schemas / types
 export type {

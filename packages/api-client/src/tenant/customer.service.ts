@@ -22,7 +22,7 @@ export const customerService = {
     tenantHttp
       .get<Customer[]>("/api/v1/customers", {
         params: {
-          role: "CUSTOMER",
+          role: "customer",
           ...(params?.q ? { name: params.q } : {}),
           ...(params?.status && params.status !== "all" ? { status: params.status } : {}),
           limit: params?.limit ?? 20,

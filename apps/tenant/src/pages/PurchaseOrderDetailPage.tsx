@@ -193,7 +193,7 @@ export function PurchaseOrderDetailPage() {
                   {t("supplier")}
                 </span>
                 <span className="text-sm font-500 text-text-main-light dark:text-text-main-dark">
-                  {order.supplier_id}
+                  {order.supplier_name ?? order.supplier_id}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
@@ -201,7 +201,7 @@ export function PurchaseOrderDetailPage() {
                   {t("warehouse")}
                 </span>
                 <span className="text-sm text-text-main-light dark:text-text-main-dark">
-                  {order.warehouse_id}
+                  {order.warehouse_name ?? order.warehouse_id}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
@@ -209,7 +209,7 @@ export function PurchaseOrderDetailPage() {
                   {t("source")}
                 </span>
                 <span className="text-sm text-text-main-light dark:text-text-main-dark">
-                  {t(`source_${order.source}`)}
+                  {t(`source_${order.source.toUpperCase()}`)}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
@@ -276,7 +276,7 @@ export function PurchaseOrderDetailPage() {
                         className="border-b border-border-light dark:border-border-dark last:border-0"
                       >
                         <td className="py-3 pe-4 text-text-main-light dark:text-text-main-dark">
-                          {line.material_id}
+                          {line.material_name ?? line.material_id}
                         </td>
                         <td className="py-3 pe-4 text-end text-text-main-light dark:text-text-main-dark">
                           {line.ordered_qty_value} {line.ordered_qty_unit}

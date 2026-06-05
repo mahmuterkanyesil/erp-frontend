@@ -21,7 +21,7 @@ export const supplierService = {
     tenantHttp
       .get<Supplier[]>("/api/v1/customers", {
         params: {
-          role: "SUPPLIER",
+          role: "supplier",
           ...(params?.q ? { name: params.q } : {}),
           ...(params?.status && params.status !== "all" ? { status: params.status } : {}),
           limit: params?.limit ?? 20,
