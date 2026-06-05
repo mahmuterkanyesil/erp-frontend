@@ -20,9 +20,8 @@ function toDisplayName(p: Omit<Supplier, "name">): Supplier {
 export const supplierService = {
   getSuppliers: (params?: { q?: string; status?: string; limit?: number }): Promise<Supplier[]> =>
     tenantHttp
-      .get<Supplier[]>("/api/v1/customers", {
+      .get<Supplier[]>("/api/v1/suppliers", {
         params: {
-          role: "supplier",
           ...(params?.q ? { name: params.q } : {}),
           ...(params?.status && params.status !== "all" ? { status: params.status } : {}),
           limit: params?.limit ?? 20,
@@ -32,31 +31,16 @@ export const supplierService = {
 
   getSupplier: (id: string): Promise<Supplier> =>
     tenantHttp
-      .get<Supplier>(`/api/v1/customers/${id}`)
+      .get<Supplier>(`/api/v1/suppliers/${id}`)
       .then((r) => toDisplayName(r.data)),
 
   createSupplier: async (body: CreateSupplierRequest): Promise<Supplier> => {
-    const { payment_term_days, lead_time_days, currency, ...partnerFields } = body
-    const { data: created } = await tenantHttp.post<{ id: string }>("/api/v1/customers", {
-      partner_type: partnerFields.partner_type ?? "company",
-      company_name: partnerFields.company_name,
-      first_name: partnerFields.first_name,
-      last_name: partnerFields.last_name,
-      tax_number: partnerFields.tax_number,
-      tax_office: partnerFields.tax_office,
-      email: partnerFields.email,
-      phone: partnerFields.phone,
-    })
-    await tenantHttp.post(`/api/v1/customers/${created.id}/supplier-role`, {
-      ...(payment_term_days !== undefined ? { payment_term_days } : {}),
-      ...(lead_time_days !== undefined ? { lead_time_days } : {}),
-      ...(currency ? { currency } : {}),
-    })
+    const { data: created } = await tenantHttp.post<{ id: string }>("/api/v1/suppliers", body)
     return supplierService.getSupplier(created.id)
   },
 
   updateSupplier: (id: string, body: UpdateSupplierRequest): Promise<void> =>
-    tenantHttp.patch(`/api/v1/customers/${id}`, body).then(() => undefined),
+    tenantHttp.patch(`/api/v1/suppliers/${id}`, body).then(() => undefined),
 
   getSupplierOrders: (id: string): Promise<PurchaseOrder[]> =>
     tenantHttp
@@ -64,7 +48,7 @@ export const supplierService = {
       .then((r) => r.data),
 
   updateSupplierRole: (id: string, body: UpdateSupplierRoleRequest): Promise<void> =>
-    tenantHttp.patch(`/api/v1/customers/${id}/supplier-role`, body).then(() => undefined),
+    tenantHttp.patch(`/api/v1/suppliers/${id}/supplier-role`, body).then(() => undefined),
 
   getSupplierAccount: (id: string): Promise<AccountingAccount | null> =>
     tenantHttp

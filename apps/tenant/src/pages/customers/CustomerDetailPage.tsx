@@ -33,6 +33,8 @@ export function CustomerDetailPage() {
   function handleEditSubmit(values: CustomerFormValues) {
     updateCustomer.mutate({
       company_name: values.company_name,
+      first_name: values.first_name,
+      last_name: values.last_name,
       tax_number: values.tax_number || undefined,
       tax_office: values.tax_office || undefined,
       email: values.email || undefined,
@@ -42,7 +44,7 @@ export function CustomerDetailPage() {
     updateCustomerRole.mutate({
       segment: values.segment,
       payment_term_days: values.payment_term_days,
-      credit_amount: values.credit_limit || undefined,
+      credit_amount: values.credit_amount || undefined,
     })
   }
 

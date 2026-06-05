@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useTranslation } from "react-i18next"
 import { Input, Textarea, Select } from "@erp/ui"
@@ -21,6 +21,11 @@ const SEGMENT_OPTIONS = [
   { value: "C", label: "C" },
 ]
 
+const PARTNER_TYPE_OPTIONS = [
+  { value: "company", label: "Company" },
+  { value: "individual", label: "Individual" },
+]
+
 export function CustomerForm({ defaultValues, customer, onSubmit, isPending, formId = "customer-form" }: Props) {
   const { t } = useTranslation("customers")
   const { t: tc } = useTranslation("common")
@@ -28,36 +33,68 @@ export function CustomerForm({ defaultValues, customer, onSubmit, isPending, for
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<CustomerFormValues>({
     resolver: zodResolver(customerSchema),
     defaultValues: customer
       ? {
+          partner_type: customer.partner_type ?? "company",
           company_name: customer.company_name ?? customer.name,
+          first_name: customer.first_name ?? "",
+          last_name: customer.last_name ?? "",
           tax_number: customer.tax_number ?? "",
           tax_office: customer.tax_office ?? "",
           email: customer.email ?? "",
           phone: customer.phone ?? "",
           segment: customer.segment,
-          credit_limit: customer.credit_limit ?? "",
+          credit_amount: customer.credit_limit ?? "",
           payment_term_days: customer.payment_term_days,
           notes: customer.notes ?? "",
         }
-      : defaultValues,
+      : { partner_type: defaultValues?.partner_type ?? "company", ...defaultValues },
   })
+
+  const partnerType = useWatch({ control, name: "partner_type" })
 
   return (
     <form id={formId} onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-2">
-          <Input
-            label={t("companyName")}
-            required
-            error={errors.company_name?.message}
+          <Select
+            label="Partner Type"
+            options={PARTNER_TYPE_OPTIONS}
             disabled={isPending}
-            {...register("company_name")}
+            {...register("partner_type")}
           />
         </div>
+        {partnerType === "company" ? (
+          <div className="md:col-span-2">
+            <Input
+              label={t("companyName")}
+              required
+              error={errors.company_name?.message}
+              disabled={isPending}
+              {...register("company_name")}
+            />
+          </div>
+        ) : (
+          <>
+            <Input
+              label="First Name"
+              required
+              error={errors.first_name?.message}
+              disabled={isPending}
+              {...register("first_name")}
+            />
+            <Input
+              label="Last Name"
+              error={errors.last_name?.message}
+              disabled={isPending}
+              {...register("last_name")}
+            />
+          </>
+        )}
         <Input
           label={t("taxNumber")}
           error={errors.tax_number?.message}
@@ -95,9 +132,9 @@ export function CustomerForm({ defaultValues, customer, onSubmit, isPending, for
         <Input
           label={t("creditLimit")}
           leftIcon="account_balance_wallet"
-          error={errors.credit_limit?.message}
+          error={errors.credit_amount?.message}
           disabled={isPending}
-          {...register("credit_limit")}
+          {...register("credit_amount")}
         />
         <Input
           label={t("paymentTermDays")}
