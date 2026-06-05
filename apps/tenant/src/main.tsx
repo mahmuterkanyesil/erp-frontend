@@ -77,9 +77,13 @@ async function bootstrap() {
         accessToken: res.access_token,
         refreshToken: res.refresh_token,
       })
-      const raw = await authService.getPermissions(res.user.id)
-      const perms = Array.isArray(raw) ? [...new Set(raw.map((p) => p.toLowerCase()))] : []
-      useAuthStore.getState().setPermissions(perms)
+      try {
+        const raw = await authService.getPermissions(res.user.id)
+        const perms = Array.isArray(raw) ? [...new Set(raw.map((p) => p.toLowerCase()))] : []
+        useAuthStore.getState().setPermissions(perms)
+      } catch {
+        // permissions fetch failure does not invalidate the session
+      }
     } catch {
       useAuthStore.getState().clearAuth()
     }

@@ -27,8 +27,8 @@ export function GoodsReceiptForm({ orderLines, onSubmit, isLoading, onCancel }: 
       lines: orderLines.map((l) => ({
         order_line_id: l.id,
         material_id: l.material_id,
-        quantity: l.quantity,
-        unit: l.unit,
+        quantity: l.ordered_qty_value,
+        unit: l.ordered_qty_unit,
       })),
     },
   })

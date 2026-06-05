@@ -13,13 +13,13 @@ export interface LoginRequest {
 
 export interface UserResult {
   id: string
-  tenantID: string
+  tenant_id: string
   email: string
-  firstName: string
-  lastName: string
-  roleIDs: string[]
-  accessLevel: string
-  storeIDs: string[]
+  first_name: string
+  last_name: string
+  role_ids: string[]
+  access_level: string
+  store_ids: string[]
   status: string
 }
 
@@ -297,8 +297,11 @@ export type MaterialType =
 export interface PurchaseOrderLine {
   id: string
   material_id: string
-  quantity: number
-  unit: string
+  material_name?: string
+  material_code?: string
+  ordered_qty_value: number
+  ordered_qty_unit: string
+  received_qty_value?: number
   unit_price_amount: string
   unit_price_currency: string
   status: string
@@ -308,12 +311,15 @@ export interface PurchaseOrder {
   id: string
   tenant_id: string
   supplier_id: string
+  supplier_name?: string
   warehouse_id: string
+  warehouse_name?: string
+  warehouse_code?: string
   source: string
   source_ref?: string
   status: PurchaseOrderStatus
   expected_at: string
-  lines: PurchaseOrderLine[]
+  lines?: PurchaseOrderLine[]
   notes?: string
 }
 

@@ -7,7 +7,7 @@ export function DashboardPage() {
   const user = useAuthStore((s) => s.user)
 
   const subtitle = user
-    ? `${t("welcomePrefix")}, ${user.firstName} ${user.lastName}. ${t("welcomeSubtitle")}`
+    ? `${t("welcomePrefix")}, ${user.first_name} ${user.last_name}. ${t("welcomeSubtitle")}`
     : t("welcomeSubtitle")
 
   return (

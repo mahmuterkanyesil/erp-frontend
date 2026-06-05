@@ -38,7 +38,7 @@ export function GoodsReceiptPage() {
       />
       <Card className="max-w-2xl">
         <GoodsReceiptForm
-          orderLines={order.lines}
+          orderLines={order.lines ?? []}
           onSubmit={handleSubmit}
           isLoading={isPending}
           onCancel={() => navigate({ to: "/purchasing/$orderId", params: { orderId } })}

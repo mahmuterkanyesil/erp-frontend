@@ -27,10 +27,14 @@ export function useLogin(onSuccess: () => void) {
         refreshToken: res.refresh_token,
       })
 
-      // Step 3: fetch permissions — normalize to lowercase and deduplicate
-      const raw = await authService.getPermissions(res.user.id)
-      const perms = Array.isArray(raw) ? [...new Set(raw.map((p) => p.toLowerCase()))] : []
-      setPermissions(perms)
+      // Step 3: fetch permissions — failure does not block login
+      try {
+        const raw = await authService.getPermissions(res.user.id)
+        const perms = Array.isArray(raw) ? [...new Set(raw.map((p) => p.toLowerCase()))] : []
+        setPermissions(perms)
+      } catch {
+        // permissions fetch failure does not invalidate the session
+      }
 
       return res
     },

@@ -19,7 +19,7 @@ function toDisplayName(p: Omit<Supplier, "name">): Supplier {
 export const supplierService = {
   getSuppliers: (params?: { q?: string; status?: string; limit?: number }): Promise<Supplier[]> =>
     tenantHttp
-      .get<Supplier[]>("/api/v1/customers/partners", {
+      .get<Supplier[]>("/api/v1/customers", {
         params: {
           role: "SUPPLIER",
           ...(params?.q ? { name: params.q } : {}),
@@ -31,12 +31,12 @@ export const supplierService = {
 
   getSupplier: (id: string): Promise<Supplier> =>
     tenantHttp
-      .get<Supplier>(`/api/v1/customers/partners/${id}`)
+      .get<Supplier>(`/api/v1/customers/${id}`)
       .then((r) => toDisplayName(r.data)),
 
   createSupplier: async (body: CreateSupplierRequest): Promise<Supplier> => {
     const { payment_term_days, lead_time_days, currency, ...partnerFields } = body
-    const { data: created } = await tenantHttp.post<{ id: string }>("/api/v1/customers/partners", {
+    const { data: created } = await tenantHttp.post<{ id: string }>("/api/v1/customers", {
       partner_type: partnerFields.partner_type ?? "COMPANY",
       company_name: partnerFields.company_name,
       first_name: partnerFields.first_name,
@@ -46,7 +46,7 @@ export const supplierService = {
       email: partnerFields.email,
       phone: partnerFields.phone,
     })
-    await tenantHttp.post(`/api/v1/customers/partners/${created.id}/roles/supplier`, {
+    await tenantHttp.post(`/api/v1/customers/${created.id}/supplier-role`, {
       ...(payment_term_days !== undefined ? { payment_term_days } : {}),
       ...(lead_time_days !== undefined ? { lead_time_days } : {}),
       ...(currency ? { currency } : {}),
@@ -55,7 +55,7 @@ export const supplierService = {
   },
 
   updateSupplier: (id: string, body: UpdateSupplierRequest): Promise<void> =>
-    tenantHttp.put(`/api/v1/customers/partners/${id}`, body).then(() => undefined),
+    tenantHttp.patch(`/api/v1/customers/${id}`, body).then(() => undefined),
 
   getSupplierOrders: (id: string): Promise<PurchaseOrder[]> =>
     tenantHttp

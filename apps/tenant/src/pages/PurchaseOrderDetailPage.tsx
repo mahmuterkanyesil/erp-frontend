@@ -246,7 +246,7 @@ export function PurchaseOrderDetailPage() {
                 </PermissionGate>
               )}
             </CardHeader>
-            {order.lines.length === 0 ? (
+            {(order.lines ?? []).length === 0 ? (
               <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark py-4 text-center">
                 {tc("noData")}
               </p>
@@ -270,7 +270,7 @@ export function PurchaseOrderDetailPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {order.lines.map((line) => (
+                    {(order.lines ?? []).map((line) => (
                       <tr
                         key={line.id}
                         className="border-b border-border-light dark:border-border-dark last:border-0"
@@ -279,13 +279,13 @@ export function PurchaseOrderDetailPage() {
                           {line.material_id}
                         </td>
                         <td className="py-3 pe-4 text-end text-text-main-light dark:text-text-main-dark">
-                          {line.quantity} {line.unit}
+                          {line.ordered_qty_value} {line.ordered_qty_unit}
                         </td>
                         <td className="py-3 pe-4 text-end text-text-secondary-light dark:text-text-secondary-dark hidden md:table-cell">
                           {line.unit_price_amount} {line.unit_price_currency}
                         </td>
                         <td className="py-3 pe-4 text-end font-500 text-text-main-light dark:text-text-main-dark">
-                          {(line.quantity * parseFloat(line.unit_price_amount)).toFixed(2)}{" "}
+                          {(line.ordered_qty_value * parseFloat(line.unit_price_amount)).toFixed(2)}{" "}
                           {line.unit_price_currency}
                         </td>
                       </tr>

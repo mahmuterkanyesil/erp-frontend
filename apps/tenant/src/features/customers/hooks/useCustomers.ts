@@ -40,10 +40,10 @@ export function useCustomerOrders(id: string) {
   })
 }
 
-export function useCustomerAddresses(id: string) {
+export function useCustomerDefaultAddress(id: string) {
   return useQuery({
     queryKey: customerKeys.addresses(id),
-    queryFn: () => customerService.getCustomerAddresses(id),
+    queryFn: () => customerService.getCustomerDefaultAddress(id),
     staleTime: 30_000,
     enabled: !!id,
   })

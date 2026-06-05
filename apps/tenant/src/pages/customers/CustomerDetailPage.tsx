@@ -5,7 +5,7 @@ import { cn } from "@erp/utils"
 import { Button, PageHeader, Card, PermissionGate, Modal, TableSkeleton, EmptyState, Spinner } from "@erp/ui"
 import { useLocaleFormat } from "@erp/hooks"
 import {
-  useCustomer, useCustomerOrders, useCustomerAddresses, useCustomerAccount,
+  useCustomer, useCustomerOrders, useCustomerDefaultAddress, useCustomerAccount,
   useUpdateCustomer,
   CustomerStatusBadge, CustomerForm,
 } from "@/features/customers"
@@ -24,7 +24,7 @@ export function CustomerDetailPage() {
 
   const { data: customer, isLoading } = useCustomer(customerId)
   const { data: orders = [], isLoading: ordersLoading } = useCustomerOrders(customerId)
-  const { data: addresses = [], isLoading: addressesLoading } = useCustomerAddresses(customerId)
+  const { data: defaultAddress, isLoading: addressesLoading } = useCustomerDefaultAddress(customerId)
   const { data: account, isLoading: accountLoading } = useCustomerAccount(customerId)
 
   const updateCustomer = useUpdateCustomer(customerId, () => setEditOpen(false))
@@ -219,32 +219,25 @@ export function CustomerDetailPage() {
 
             {activeTab === "addresses" && (
               addressesLoading ? <TableSkeleton /> :
-              addresses.length === 0 ? <EmptyState title={t("noAddresses")} /> :
+              !defaultAddress ? <EmptyState title={t("noAddresses")} /> :
               <div className="flex flex-col gap-3">
-                {addresses.map((addr) => (
-                  <div
-                    key={addr.id}
-                    className="flex items-start justify-between gap-3 p-3 rounded-lg border border-border-light dark:border-border-dark"
-                  >
-                    <div className="flex flex-col gap-0.5 text-sm text-text-main-light dark:text-text-main-dark">
-                      {addr.label && (
-                        <span className="text-xs font-500 text-text-secondary-light dark:text-text-secondary-dark">
-                          {addr.label}
-                        </span>
-                      )}
-                      {addr.street && <span>{addr.street}</span>}
-                      <span>
-                        {[addr.district, addr.city, addr.postal_code].filter(Boolean).join(", ")}
-                      </span>
-                      {addr.country && <span>{addr.country}</span>}
-                    </div>
-                    {addr.is_default && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-500 shrink-0">
-                        {t("defaultAddress")}
+                <div className="flex items-start justify-between gap-3 p-3 rounded-lg border border-border-light dark:border-border-dark">
+                  <div className="flex flex-col gap-0.5 text-sm text-text-main-light dark:text-text-main-dark">
+                    {defaultAddress.label && (
+                      <span className="text-xs font-500 text-text-secondary-light dark:text-text-secondary-dark">
+                        {defaultAddress.label}
                       </span>
                     )}
+                    {defaultAddress.street && <span>{defaultAddress.street}</span>}
+                    <span>
+                      {[defaultAddress.district, defaultAddress.city, defaultAddress.postal_code].filter(Boolean).join(", ")}
+                    </span>
+                    {defaultAddress.country && <span>{defaultAddress.country}</span>}
                   </div>
-                ))}
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-500 shrink-0">
+                    {t("defaultAddress")}
+                  </span>
+                </div>
               </div>
             )}
           </Card>

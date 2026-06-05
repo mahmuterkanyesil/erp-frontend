@@ -20,7 +20,7 @@ function toDisplayName(p: Omit<Customer, "name">): Customer {
 export const customerService = {
   getCustomers: (params?: { q?: string; status?: string; limit?: number }): Promise<Customer[]> =>
     tenantHttp
-      .get<Customer[]>("/api/v1/customers/partners", {
+      .get<Customer[]>("/api/v1/customers", {
         params: {
           role: "CUSTOMER",
           ...(params?.q ? { name: params.q } : {}),
@@ -32,12 +32,12 @@ export const customerService = {
 
   getCustomer: (id: string): Promise<Customer> =>
     tenantHttp
-      .get<Customer>(`/api/v1/customers/partners/${id}`)
+      .get<Customer>(`/api/v1/customers/${id}`)
       .then((r) => toDisplayName(r.data)),
 
   createCustomer: async (body: CreateCustomerRequest): Promise<Customer> => {
     const { segment, credit_amount, credit_currency, payment_term_days, discount_rate, ...partnerFields } = body
-    const { data: created } = await tenantHttp.post<{ id: string }>("/api/v1/customers/partners", {
+    const { data: created } = await tenantHttp.post<{ id: string }>("/api/v1/customers", {
       partner_type: partnerFields.partner_type ?? "COMPANY",
       company_name: partnerFields.company_name,
       first_name: partnerFields.first_name,
@@ -47,7 +47,7 @@ export const customerService = {
       email: partnerFields.email,
       phone: partnerFields.phone,
     })
-    await tenantHttp.post(`/api/v1/customers/partners/${created.id}/roles/customer`, {
+    await tenantHttp.post(`/api/v1/customers/${created.id}/customer-role`, {
       ...(credit_amount ? { credit_amount, credit_currency: credit_currency ?? "TRY" } : {}),
       ...(payment_term_days !== undefined ? { payment_term_days } : {}),
       ...(discount_rate ? { discount_rate } : {}),
@@ -57,17 +57,18 @@ export const customerService = {
   },
 
   updateCustomer: (id: string, body: UpdateCustomerRequest): Promise<void> =>
-    tenantHttp.put(`/api/v1/customers/partners/${id}`, body).then(() => undefined),
+    tenantHttp.patch(`/api/v1/customers/${id}`, body).then(() => undefined),
 
   getCustomerOrders: (id: string): Promise<CustomerOrderSummary[]> =>
     tenantHttp
       .get<CustomerOrderSummary[]>("/api/v1/orders", { params: { customer_id: id } })
       .then((r) => r.data),
 
-  getCustomerAddresses: (id: string): Promise<CustomerAddress[]> =>
+  getCustomerDefaultAddress: (id: string): Promise<CustomerAddress | null> =>
     tenantHttp
-      .get<CustomerAddress[]>(`/api/v1/customers/partners/${id}/addresses`)
-      .then((r) => r.data),
+      .get<CustomerAddress>(`/api/v1/customers/${id}/addresses/default`)
+      .then((r) => r.data)
+      .catch(() => null),
 
   getCustomerAccount: (id: string): Promise<AccountingAccount | null> =>
     tenantHttp
