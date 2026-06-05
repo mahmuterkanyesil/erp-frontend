@@ -32,6 +32,8 @@ export function SupplierDetailPage() {
   function handleEditSubmit(values: SupplierFormValues) {
     updateSupplier.mutate({
       company_name: values.company_name,
+      first_name: values.first_name,
+      last_name: values.last_name,
       tax_number: values.tax_number || undefined,
       tax_office: values.tax_office || undefined,
       email: values.email || undefined,
