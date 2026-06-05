@@ -60,6 +60,25 @@ export function RawMaterialForm({ onSubmit, isLoading, onCancel }: Props) {
           {...register("unit")}
           error={errors.unit?.message}
         />
+        <Input
+          label={t("minOrderQty")}
+          type="number"
+          step="0.001"
+          {...register("min_order_qty")}
+          error={errors.min_order_qty?.message}
+        />
+        <Input
+          label={t("minOrderQtyUnit")}
+          {...register("min_order_qty_unit")}
+          error={errors.min_order_qty_unit?.message}
+        />
+        <Input
+          label={t("leadTimeDays")}
+          type="number"
+          min={0}
+          {...register("lead_time_days")}
+          error={errors.lead_time_days?.message}
+        />
       </div>
       <div className="flex justify-end gap-2 pt-2">
         {onCancel && (

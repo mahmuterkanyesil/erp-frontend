@@ -6,7 +6,7 @@ import { Button, PageHeader, Card, PermissionGate, Modal, TableSkeleton, EmptySt
 import { useLocaleFormat } from "@erp/hooks"
 import {
   useCustomer, useCustomerOrders, useCustomerDefaultAddress, useCustomerAccount,
-  useUpdateCustomer,
+  useUpdateCustomer, useUpdateCustomerRole,
   CustomerStatusBadge, CustomerForm,
 } from "@/features/customers"
 import type { CustomerFormValues } from "@/features/customers"
@@ -27,7 +27,8 @@ export function CustomerDetailPage() {
   const { data: defaultAddress, isLoading: addressesLoading } = useCustomerDefaultAddress(customerId)
   const { data: account, isLoading: accountLoading } = useCustomerAccount(customerId)
 
-  const updateCustomer = useUpdateCustomer(customerId, () => setEditOpen(false))
+  const updateCustomer = useUpdateCustomer(customerId)
+  const updateCustomerRole = useUpdateCustomerRole(customerId, () => setEditOpen(false))
 
   function handleEditSubmit(values: CustomerFormValues) {
     updateCustomer.mutate({
@@ -37,6 +38,11 @@ export function CustomerDetailPage() {
       email: values.email || undefined,
       phone: values.phone || undefined,
       notes: values.notes || undefined,
+    })
+    updateCustomerRole.mutate({
+      segment: values.segment,
+      payment_term_days: values.payment_term_days,
+      credit_amount: values.credit_limit || undefined,
     })
   }
 
@@ -253,7 +259,7 @@ export function CustomerDetailPage() {
         footer={
           <>
             <Button variant="ghost" onClick={() => setEditOpen(false)}>{tc("cancel")}</Button>
-            <Button type="submit" form="customer-edit-form" loading={updateCustomer.isPending}>
+            <Button type="submit" form="customer-edit-form" loading={updateCustomer.isPending || updateCustomerRole.isPending}>
               {tc("save")}
             </Button>
           </>

@@ -19,10 +19,14 @@ import {
   useConfirmOrder,
   useCancelOrder,
   useAddOrderLine,
+  useUpdatePurchaseOrder,
+  useWarehouses,
   PurchaseOrderStatusBadge,
   AddLineForm,
+  PurchaseOrderForm,
 } from "@/features/purchasing"
-import type { AddOrderLineValues } from "@/features/purchasing"
+import type { AddOrderLineValues, CreatePurchaseOrderValues } from "@/features/purchasing"
+import { useSuppliers } from "@/features/suppliers"
 import type { PurchaseOrderStatus } from "@erp/api-client"
 
 const TIMELINE_STEPS: PurchaseOrderStatus[] = [
@@ -41,6 +45,7 @@ export function PurchaseOrderDetailPage() {
   const { t: tc } = useTranslation("common")
   const { formatDate } = useLocaleFormat()
 
+  const [showEdit, setShowEdit] = useState(false)
   const [showAddLine, setShowAddLine] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [showCancel, setShowCancel] = useState(false)
@@ -52,6 +57,17 @@ export function PurchaseOrderDetailPage() {
   const { mutate: addLine, isPending: isAddingLine } = useAddOrderLine(orderId, () =>
     setShowAddLine(false),
   )
+  const { mutate: updateOrder, isPending: isUpdating } = useUpdatePurchaseOrder(orderId, () =>
+    setShowEdit(false),
+  )
+  const { data: suppliers = [] } = useSuppliers()
+  const { data: warehouses = [] } = useWarehouses()
+
+  const supplierOptions = suppliers.map((s) => ({ value: s.id, label: s.name }))
+  const warehouseOptions = warehouses.map((w) => ({
+    value: w.id,
+    label: w.code ? `${w.name} (${w.code})` : w.name,
+  }))
 
   if (isLoading) return <FormSkeleton />
   if (!order) return null
@@ -81,6 +97,13 @@ export function PurchaseOrderDetailPage() {
         ]}
         actions={
           <div className="flex items-center gap-2">
+            {canModify && (
+              <PermissionGate permission="purchasing:create">
+                <Button variant="ghost" leftIcon="edit" onClick={() => setShowEdit(true)}>
+                  {t("editOrder")}
+                </Button>
+              </PermissionGate>
+            )}
             {canReceipt && (
               <PermissionGate permission="purchasing:create">
                 <Button
@@ -317,6 +340,24 @@ export function PurchaseOrderDetailPage() {
         title={t("confirmTitle")}
         loading={isConfirming}
       />
+
+      <Modal open={showEdit} onClose={() => setShowEdit(false)} title={t("editOrder")}>
+        <PurchaseOrderForm
+          suppliers={supplierOptions}
+          warehouses={warehouseOptions}
+          defaultValues={{
+            supplier_id: order.supplier_id,
+            warehouse_id: order.warehouse_id,
+            source: order.source.toUpperCase() as "MANUAL" | "ORDER",
+            expected_date: order.expected_at?.slice(0, 10),
+            notes: order.notes ?? undefined,
+          }}
+          submitLabel={tc("save")}
+          onSubmit={(values: CreatePurchaseOrderValues) => updateOrder(values)}
+          isLoading={isUpdating}
+          onCancel={() => setShowEdit(false)}
+        />
+      </Modal>
 
       <Modal
         open={showCancel}

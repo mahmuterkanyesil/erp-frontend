@@ -86,5 +86,12 @@
   "successLineUpdated": "Satır güncellendi",
   "successLineDeleted": "Satır silindi",
   "successBulkCreated": "{{count}} hammadde oluşturuldu",
-  "successBulkPartial": "{{count}} oluşturuldu, {{errors}} hata"
+  "successBulkPartial": "{{count}} oluşturuldu, {{errors}} hata",
+  "minOrderQty": "Min. Sipariş Miktarı",
+  "minOrderQtyUnit": "Min. Sipariş Birimi",
+  "leadTimeDays": "Temin Süresi (Gün)",
+  "editOrder": "Emri Düzenle",
+  "editMaterial": "Hammadde Düzenle",
+  "successUpdatedOrder": "Emir güncellendi",
+  "successUpdatedMaterial": "Hammadde güncellendi"
 }

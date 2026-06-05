@@ -2,16 +2,21 @@ import { tenantHttp } from "../http"
 import type {
   PurchaseOrder,
   CreatePurchaseOrderRequest,
+  UpdatePurchaseOrderRequest,
   AddPurchaseOrderLineRequest,
   CreateGoodsReceiptRequest,
   RawMaterial,
   CreateRawMaterialRequest,
+  UpdateRawMaterialRequest,
   UpdatePreferredSupplierRequest,
 } from "../types"
 
 export const purchasingService = {
   createOrder: (body: CreatePurchaseOrderRequest): Promise<void> =>
     tenantHttp.post("/api/v1/purchasing/orders", body).then(() => undefined),
+
+  updateOrder: (id: string, body: UpdatePurchaseOrderRequest): Promise<void> =>
+    tenantHttp.patch(`/api/v1/purchasing/orders/${id}`, body).then(() => undefined),
 
   getOrders: (params?: { supplier_id?: string }): Promise<PurchaseOrder[]> =>
     tenantHttp
@@ -43,6 +48,9 @@ export const purchasingService = {
 
   createMaterial: (body: CreateRawMaterialRequest): Promise<void> =>
     tenantHttp.post("/api/v1/purchasing/materials", body).then(() => undefined),
+
+  updateMaterial: (id: string, body: UpdateRawMaterialRequest): Promise<void> =>
+    tenantHttp.patch(`/api/v1/purchasing/materials/${id}`, body).then(() => undefined),
 
   getMaterials: (): Promise<RawMaterial[]> =>
     tenantHttp.get<RawMaterial[]>("/api/v1/purchasing/materials").then((r) => r.data),

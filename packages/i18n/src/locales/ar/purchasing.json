@@ -86,5 +86,12 @@
   "successLineUpdated": "تم تحديث السطر",
   "successLineDeleted": "تم حذف السطر",
   "successBulkCreated": "تم إنشاء {{count}} مادة",
-  "successBulkPartial": "تم إنشاء {{count}}، {{errors}} أخطاء"
+  "successBulkPartial": "تم إنشاء {{count}}، {{errors}} أخطاء",
+  "minOrderQty": "الحد الأدنى للطلب",
+  "minOrderQtyUnit": "وحدة الحد الأدنى",
+  "leadTimeDays": "مدة التوريد (أيام)",
+  "editOrder": "تعديل الأمر",
+  "editMaterial": "تعديل المادة",
+  "successUpdatedOrder": "تم تحديث الأمر",
+  "successUpdatedMaterial": "تم تحديث المادة"
 }

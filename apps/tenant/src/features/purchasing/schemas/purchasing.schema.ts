@@ -35,6 +35,9 @@ export const createRawMaterialSchema = z.object({
   code: z.string().min(1),
   material_type: z.enum(["plastic_granule", "additive", "packaging", "semi_finished", "other"]),
   unit: z.string().min(1),
+  min_order_qty: z.coerce.number().positive(),
+  min_order_qty_unit: z.string().min(1),
+  lead_time_days: z.coerce.number().int().min(0).optional(),
 })
 
 export const updatePreferredSupplierSchema = z.object({

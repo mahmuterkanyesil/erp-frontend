@@ -43,6 +43,10 @@ export type {
   RawMaterial,
   CreateRawMaterialRequest,
   UpdatePreferredSupplierRequest,
+  UpdatePurchaseOrderRequest,
+  UpdateRawMaterialRequest,
+  UpdateSupplierRoleRequest,
+  UpdateCustomerRoleRequest,
   GoodsReceipt,
   GoodsReceiptLineItem,
 } from "./types"

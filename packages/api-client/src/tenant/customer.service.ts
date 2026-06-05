@@ -3,6 +3,7 @@ import type {
   Customer,
   CreateCustomerRequest,
   UpdateCustomerRequest,
+  UpdateCustomerRoleRequest,
   CustomerAddress,
   CustomerOrderSummary,
   AccountingAccount,
@@ -38,7 +39,7 @@ export const customerService = {
   createCustomer: async (body: CreateCustomerRequest): Promise<Customer> => {
     const { segment, credit_amount, credit_currency, payment_term_days, discount_rate, ...partnerFields } = body
     const { data: created } = await tenantHttp.post<{ id: string }>("/api/v1/customers", {
-      partner_type: partnerFields.partner_type ?? "COMPANY",
+      partner_type: partnerFields.partner_type ?? "company",
       company_name: partnerFields.company_name,
       first_name: partnerFields.first_name,
       last_name: partnerFields.last_name,
@@ -69,6 +70,9 @@ export const customerService = {
       .get<CustomerAddress>(`/api/v1/customers/${id}/addresses/default`)
       .then((r) => r.data)
       .catch(() => null),
+
+  updateCustomerRole: (id: string, body: UpdateCustomerRoleRequest): Promise<void> =>
+    tenantHttp.patch(`/api/v1/customers/${id}/customer-role`, body).then(() => undefined),
 
   getCustomerAccount: (id: string): Promise<AccountingAccount | null> =>
     tenantHttp

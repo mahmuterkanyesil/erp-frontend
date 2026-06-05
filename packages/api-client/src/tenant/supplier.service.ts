@@ -3,6 +3,7 @@ import type {
   Supplier,
   CreateSupplierRequest,
   UpdateSupplierRequest,
+  UpdateSupplierRoleRequest,
   AccountingAccount,
   PurchaseOrder,
 } from "../types"
@@ -37,7 +38,7 @@ export const supplierService = {
   createSupplier: async (body: CreateSupplierRequest): Promise<Supplier> => {
     const { payment_term_days, lead_time_days, currency, ...partnerFields } = body
     const { data: created } = await tenantHttp.post<{ id: string }>("/api/v1/customers", {
-      partner_type: partnerFields.partner_type ?? "COMPANY",
+      partner_type: partnerFields.partner_type ?? "company",
       company_name: partnerFields.company_name,
       first_name: partnerFields.first_name,
       last_name: partnerFields.last_name,
@@ -61,6 +62,9 @@ export const supplierService = {
     tenantHttp
       .get<PurchaseOrder[]>("/api/v1/purchasing/orders", { params: { supplier_id: id } })
       .then((r) => r.data),
+
+  updateSupplierRole: (id: string, body: UpdateSupplierRoleRequest): Promise<void> =>
+    tenantHttp.patch(`/api/v1/customers/${id}/supplier-role`, body).then(() => undefined),
 
   getSupplierAccount: (id: string): Promise<AccountingAccount | null> =>
     tenantHttp

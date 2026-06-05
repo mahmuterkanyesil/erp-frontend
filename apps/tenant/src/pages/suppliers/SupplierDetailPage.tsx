@@ -6,7 +6,7 @@ import { Button, PageHeader, Card, PermissionGate, Modal, TableSkeleton, EmptySt
 import { useLocaleFormat } from "@erp/hooks"
 import {
   useSupplier, useSupplierOrders, useSupplierAccount,
-  useUpdateSupplier,
+  useUpdateSupplier, useUpdateSupplierRole,
   SupplierStatusBadge, SupplierForm,
 } from "@/features/suppliers"
 import type { SupplierFormValues } from "@/features/suppliers"
@@ -26,7 +26,8 @@ export function SupplierDetailPage() {
   const { data: orders = [], isLoading: ordersLoading } = useSupplierOrders(supplierId)
   const { data: account, isLoading: accountLoading } = useSupplierAccount(supplierId)
 
-  const updateSupplier = useUpdateSupplier(supplierId, () => setEditOpen(false))
+  const updateSupplier = useUpdateSupplier(supplierId)
+  const updateSupplierRole = useUpdateSupplierRole(supplierId, () => setEditOpen(false))
 
   function handleEditSubmit(values: SupplierFormValues) {
     updateSupplier.mutate({
@@ -36,6 +37,11 @@ export function SupplierDetailPage() {
       email: values.email || undefined,
       phone: values.phone || undefined,
       notes: values.notes || undefined,
+    })
+    updateSupplierRole.mutate({
+      payment_term_days: values.payment_term_days,
+      lead_time_days: values.lead_time_days,
+      currency: values.currency || undefined,
     })
   }
 
@@ -206,7 +212,7 @@ export function SupplierDetailPage() {
         footer={
           <>
             <Button variant="ghost" onClick={() => setEditOpen(false)}>{tc("cancel")}</Button>
-            <Button type="submit" form="supplier-edit-form" loading={updateSupplier.isPending}>
+            <Button type="submit" form="supplier-edit-form" loading={updateSupplier.isPending || updateSupplierRole.isPending}>
               {tc("save")}
             </Button>
           </>

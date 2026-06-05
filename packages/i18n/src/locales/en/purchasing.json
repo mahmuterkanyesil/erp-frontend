@@ -86,5 +86,12 @@
   "successLineUpdated": "Line updated",
   "successLineDeleted": "Line deleted",
   "successBulkCreated": "{{count}} materials created",
-  "successBulkPartial": "{{count}} created, {{errors}} errors"
+  "successBulkPartial": "{{count}} created, {{errors}} errors",
+  "minOrderQty": "Min. Order Qty",
+  "minOrderQtyUnit": "Min. Order Unit",
+  "leadTimeDays": "Lead Time (Days)",
+  "editOrder": "Edit Order",
+  "editMaterial": "Edit Material",
+  "successUpdatedOrder": "Order updated",
+  "successUpdatedMaterial": "Material updated"
 }

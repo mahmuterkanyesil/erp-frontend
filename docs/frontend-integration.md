@@ -51,526 +51,1500 @@ POST /api/v1/auth/login
 **Yanıt (200):**
 ```json
 {
-  "access_token": "eyJhbG...",
-  "refresh_token": "eyJhbG...",
-  "user": {
-    "id": "usr_01",
-    "tenant_id": "019e7f8f-537b-7b75-8d51-84c4805bace9",
-    "email": "user@example.com",
-    "first_name": "Ahmet",
-    "last_name": "Yılmaz",
-    "role_ids": ["role_01"],
-    "access_level": "ALL_STORES",
-    "store_ids": [],
-    "status": "ACTIVE"
-  }
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "Bearer",
+  "expires_in": 3600
 }
 ```
-
-| Alan | Değer |
-|------|-------|
-| `access_token` TTL | **15 dakika** |
-| `refresh_token` TTL | **7 gün** |
-
-### 2.2 Token Yenileme
-
-```
-POST /api/v1/auth/refresh
-```
-
-**İstek:**
-```json
-{
-  "tenant_id": "019e7f8f-537b-7b75-8d51-84c4805bace9",
-  "refresh_token": "eyJhbG..."
-}
-```
-
-**Yanıt:** Login yanıtıyla aynı format.
-
-### 2.3 Token Kullanımı
-
-Her istekte iki header zorunludur:
-
-```
-Authorization: Bearer <access_token>
-X-Tenant-ID: <tenant_uuid>
-```
-
-### 2.4 Önerilen Token Yönetimi
-
-```
-1. Login → access_token + refresh_token kaydet
-2. Her istekte access_token + X-Tenant-ID kullan
-3. 401 gelirse → refresh_token ile yenile
-4. Refresh da 401 dönerse → kullanıcıyı login ekranına yönlendir
-```
-
-> **Not:** Token'ları `localStorage` yerine `httpOnly` cookie veya memory'de saklamak güvenlik açısından tercih edilir.
 
 ---
 
 ## 3. İstek Formatı
 
-### 3.1 Genel Kurallar
+Tüm isteklerde şu header'lar zorunludur:
 
-- `Content-Type: application/json` her POST/PUT/PATCH isteğinde zorunlu
-- Para tutarları **ondalıklı string** olarak iletilir: `"1250.50"` (float değil)
-- Tarihler **RFC 3339** formatında: `"2024-06-15T14:30:00Z"`
-- ID'ler **string** (UUID)
-- Enum değerleri (status, method, source, type vb.) **BÜYÜK HARF**
+```
+Content-Type: application/json
+X-Tenant-ID: <tenant-uuid>
+Authorization: Bearer <access_token>   (auth endpoint hariç)
+```
 
-### 3.2 Başarılı Yanıtlar
-
-| Durum | HTTP Kodu | Açıklama |
-|-------|-----------|----------|
-| Kaynak döndürme | `200 OK` | GET, state geçişleri |
-| Kaynak oluşturma | `201 Created` | POST (bazı endpoint'ler) |
-| İçeriksiz başarı | `204 No Content` | Silme, bazı POST'lar |
+- Tarih/saat alanları: **RFC3339** formatı (`"2024-01-15T09:00:00Z"`)
+- Para miktarı alanları: **string** olarak decimal (`"1250.00"`) — Katalog varyant fiyatı hariç
+- Katalog varyant `price_amount`: **float64** (`1250.00`)
 
 ---
 
 ## 4. Hata Yönetimi
 
-### 4.1 Hata Yanıt Formatı
-
-Tüm hatalar aynı yapıyı döner:
-
+**Hata yanıt formatı:**
 ```json
 {
-  "error": "insufficient stock for product prod_01",
-  "code": "Unprocessable Entity"
+  "error": "hata açıklaması"
 }
 ```
 
-`code` alanı HTTP durum metnini taşır (`Unauthorized`, `Not Found`, `Unprocessable Entity`, vb.)
-
-### 4.2 HTTP Durum Kodları
-
-| Kod | Anlam | Örnek |
-|-----|-------|-------|
-| `400` | Geçersiz JSON / format hatası | Bozuk request body |
-| `401` | Token yok veya geçersiz | Süresi dolmuş access_token |
-| `403` | Yetki yok | Kullanıcının izni olmayan endpoint |
-| `404` | Kaynak bulunamadı | Olmayan sipariş ID'si |
-| `409` | Durum çakışması | Zaten onaylanmış sipariş |
-| `410` | Kaynak süresi doldu | Süresi geçmiş rezervasyon |
-| `422` | İş kuralı ihlali | Negatif stok, kredi limiti aşımı |
-| `429` | Rate limit aşıldı | Çok fazla login denemesi |
-| `500` | Sunucu hatası | İç hata |
-
-### 4.3 Frontend Hata Stratejisi
-
-```
-401 → token yenile, başarısızsa logout
-403 → "Bu işlem için yetkiniz yok" göster
-422 → error alanını kullanıcıya göster (iş kuralı mesajı)
-429 → Retry-After header'ını oku, bekle
-5xx → "Bir hata oluştu, lütfen tekrar deneyin" + log
-```
+| HTTP Kodu | Anlam |
+|-----------|-------|
+| `400` | Geçersiz istek / validasyon hatası |
+| `401` | Token eksik veya geçersiz |
+| `403` | Yetki yetersiz |
+| `404` | Kaynak bulunamadı |
+| `409` | Çakışma (duplicate vb.) |
+| `422` | İş kuralı ihlali |
+| `500` | Sunucu hatası |
 
 ---
 
 ## 5. İzin Sistemi
 
-### 5.1 Modüller ve Aksiyonlar
-
-Her endpoint bir **modül** ve **aksiyon** çiftiyle korunur. Her iki değer de **büyük harf** kullanır.
-
-| Aksiyon | Anlamı |
-|---------|--------|
-| `VIEW` | Okuma / listeleme |
-| `CREATE` | Yeni kayıt oluşturma |
-| `UPDATE` | Mevcut kaydı güncelleme |
-| `DELETE` | Kayıt silme |
-| `APPROVE` | Durum geçişi / onaylama |
-
-| Modül | Kapsam |
-|-------|--------|
-| `INVENTORY` | Stok yönetimi |
-| `ORDERS` | Sipariş yönetimi |
-| `CATALOG` | Ürün kataloğu |
-| `CUSTOMERS` | Müşteri / tedarikçi |
-| `PURCHASING` | Satın alma |
-| `ACCOUNTING` | Muhasebe hesapları |
-| `PAYMENTS` | Tahsilat / ödeme |
-| `SALES` | Satış işlemleri |
-| `WAREHOUSE` | Depo ve transfer yönetimi |
-| `SHIPMENT` | Sevkiyat yönetimi |
-| `PRODUCTION` | Üretim emirleri ve kalıplar |
-| `REPORTS` | Raporlama |
-| `SETTINGS` | Sistem ayarları |
-
-> IAM (kullanıcı/rol) endpoint'leri ayrı bir yetki mekanizmasıyla korunur ve yukarıdaki modül listesinde yer almaz.
-
-### 5.2 UI Yetkilendirme
-
-Login yanıtındaki `role_ids` ile kullanıcının yetkilerini `GET /api/v1/users/{id}/permissions` üzerinden çekebilirsiniz. Yanıt:
+İzinler `"MODULE:ACTION"` formatındadır (büyük harf):
 
 ```json
-{
-  "permissions": ["INVENTORY:VIEW", "INVENTORY:CREATE", "ORDERS:VIEW"]
-}
-```
-
-Bu listeyi kullanarak buton/menü görünürlüğünü yönetin:
-
-```typescript
-const canCreateOrder = permissions.includes("ORDERS:CREATE");
+["INVENTORY:VIEW", "INVENTORY:MANAGE", "ORDER:VIEW", "ORDER:MANAGE"]
 ```
 
 ---
 
 ## 6. Tenant API Endpoint'leri
 
-Base URL: `http://localhost:8081`
-Tüm endpoint'ler `Authorization: Bearer <token>` ve `X-Tenant-ID: <uuid>` gerektirir (`/auth/` hariç).
+### 6.1 IAM — Kullanıcı ve Rol Yönetimi
 
----
+#### Kullanıcı Listesi
 
-### 6.1 IAM — Kullanıcı ve Rol
+```
+GET /api/v1/iam/users
+```
 
-#### Kullanıcı Endpoint'leri
-
-| Method | Path | İzin | Açıklama |
-|--------|------|------|----------|
-| `POST` | `/api/v1/users` | `IAM:CREATE` | Kullanıcı oluştur |
-| `GET` | `/api/v1/users` | `IAM:VIEW` | Kullanıcıları listele |
-| `GET` | `/api/v1/users/{id}` | `IAM:VIEW` | ID ile getir |
-| `GET` | `/api/v1/users/by-email?email=` | `IAM:VIEW` | E-posta ile getir |
-| `POST` | `/api/v1/users/{id}/password` | `IAM:UPDATE` | Şifre değiştir |
-| `POST` | `/api/v1/users/{id}/lock` | `IAM:APPROVE` | Kullanıcıyı kilitle |
-| `POST` | `/api/v1/users/{id}/unlock` | `IAM:APPROVE` | Kilidini aç |
-| `POST` | `/api/v1/users/{id}/roles` | `IAM:APPROVE` | Rol ata |
-| `DELETE` | `/api/v1/users/{id}/roles/{roleId}` | `IAM:APPROVE` | Rolü kaldır |
-| `PUT` | `/api/v1/users/{id}/store-access` | `IAM:APPROVE` | Mağaza erişimi ayarla |
-| `GET` | `/api/v1/users/{id}/permissions` | `IAM:VIEW` | İzinleri getir |
-
-**Kullanıcı oluştur:**
+**Yanıt (200):**
 ```json
-// POST /api/v1/users
+[
+  {
+    "id": "uuid",
+    "tenant_id": "uuid",
+    "email": "user@example.com",
+    "first_name": "Ali",
+    "last_name": "Yılmaz",
+    "role_id": "uuid",
+    "status": "active",
+    "created_at": "2024-01-01T00:00:00Z"
+  }
+]
+```
+
+#### Kullanıcı Oluştur
+
+```
+POST /api/v1/iam/users
+```
+
+**İstek:**
+```json
 {
-  "email": "ali@firma.com",
-  "password": "güçlü_şifre",
+  "email": "user@example.com",
+  "password": "secret123",
   "first_name": "Ali",
-  "last_name": "Demir"
+  "last_name": "Yılmaz",
+  "role_id": "uuid"
 }
 ```
 
-**Şifre değiştir:**
+**Yanıt (201):**
 ```json
-// POST /api/v1/users/{id}/password
+{ "id": "uuid" }
+```
+
+#### Kullanıcı Detay
+
+```
+GET /api/v1/iam/users/{id}
+```
+
+**Yanıt (200):** Tek kullanıcı nesnesi (yukarıdaki format)
+
+#### Kullanıcı Güncelle
+
+```
+PUT /api/v1/iam/users/{id}
+```
+
+**İstek:**
+```json
 {
-  "old_password": "eski",
-  "new_password": "yeni"
+  "first_name": "Ali",
+  "last_name": "Yılmaz",
+  "role_id": "uuid"
 }
 ```
 
-**Rol ata:**
-```json
-// POST /api/v1/users/{id}/roles
-{ "role_id": "role_satis_temsilcisi" }
+**Yanıt (204):** Gövde yok
+
+#### Kullanıcı Kilitle
+
+```
+POST /api/v1/iam/users/{id}/lock
 ```
 
-**Mağaza erişimi:**
+**İstek:**
 ```json
-// PUT /api/v1/users/{id}/store-access
+{ "reason": "Şüpheli giriş denemesi" }
+```
+
+**Yanıt (204):** Gövde yok
+
+#### Kullanıcı Kilidi Aç
+
+```
+POST /api/v1/iam/users/{id}/unlock
+```
+
+**İstek:** Gövde yok
+
+**Yanıt (204):** Gövde yok
+
+#### Şifre Değiştir
+
+```
+POST /api/v1/iam/users/{id}/change-password
+```
+
+**İstek:**
+```json
 {
-  "access_level": "STORE",
-  "store_ids": ["store_01", "store_02"]
+  "old_password": "eskiSifre",
+  "new_password": "yeniSifre123"
 }
 ```
 
-#### Rol Endpoint'leri
+**Yanıt (204):** Gövde yok
 
-| Method | Path | İzin | Açıklama |
-|--------|------|------|----------|
-| `POST` | `/api/v1/roles` | `IAM:CREATE` | Rol oluştur |
-| `GET` | `/api/v1/roles` | `IAM:VIEW` | Rolleri listele |
-| `GET` | `/api/v1/roles/{id}` | `IAM:VIEW` | Rol detayı |
-| `POST` | `/api/v1/roles/{id}/permissions` | `IAM:APPROVE` | İzin ekle |
-| `DELETE` | `/api/v1/roles/{id}/permissions` | `IAM:APPROVE` | İzin kaldır |
+---
 
-**Rol oluştur:**
+#### Rol Listesi
+
+```
+GET /api/v1/iam/roles
+```
+
+**Yanıt (200):**
 ```json
-// POST /api/v1/roles
+[
+  {
+    "id": "uuid",
+    "tenant_id": "uuid",
+    "name": "Satış Temsilcisi",
+    "permissions": ["ORDER:VIEW", "ORDER:MANAGE"],
+    "is_system": false,
+    "status": "active"
+  }
+]
+```
+
+#### Rol Oluştur
+
+```
+POST /api/v1/iam/roles
+```
+
+**İstek:**
+```json
 {
-  "name": "Satış Temsilcisi",
-  "description": "Sipariş ve müşteri görüntüleme",
-  "access_level": "STORE",
-  "permissions": ["ORDERS:VIEW", "ORDERS:CREATE", "CUSTOMERS:VIEW"]
+  "name": "Depo Görevlisi",
+  "permissions": ["INVENTORY:VIEW", "INVENTORY:MANAGE"]
 }
+```
+
+**Yanıt (201):**
+```json
+{ "id": "uuid" }
+```
+
+#### Rol Detay
+
+```
+GET /api/v1/iam/roles/{id}
+```
+
+**Yanıt (200):** Tek rol nesnesi (yukarıdaki format)
+
+#### Rol Güncelle
+
+```
+PUT /api/v1/iam/roles/{id}
+```
+
+**İstek:**
+```json
+{
+  "name": "Güncellenmiş Ad",
+  "permissions": ["INVENTORY:VIEW"]
+}
+```
+
+**Yanıt (204):** Gövde yok
+
+---
+
+### 6.2 Envanter (Inventory)
+
+#### Stok Listesi
+
+```
+GET /api/v1/inventory/stocks
+```
+
+**Yanıt (200):**
+```json
+[
+  {
+    "id": "uuid",
+    "tenant_id": "uuid",
+    "product_id": "uuid",
+    "warehouse_id": "uuid",
+    "total": { "value": "100.00", "unit": "KG" },
+    "reserved": { "value": "20.00", "unit": "KG" },
+    "available": { "value": "80.00", "unit": "KG" },
+    "threshold": { "value": "10.00", "unit": "KG" }
+  }
+]
+```
+
+#### Stok Detay
+
+```
+GET /api/v1/inventory/stocks/{id}
+```
+
+**Yanıt (200):** Tek stok nesnesi (yukarıdaki format)
+
+#### Ürün + Depo'ya Göre Stok
+
+```
+GET /api/v1/inventory/stocks/by-product?product_id={uuid}&warehouse_id={uuid}
+```
+
+**Yanıt (200):** Tek stok nesnesi
+
+#### Stok İkmal (Replenish)
+
+```
+POST /api/v1/inventory/stocks/{id}/replenish
+```
+
+**İstek:**
+```json
+{
+  "quantity": "50.00",
+  "unit": "KG",
+  "reason": "Tedarikçi teslimatı"
+}
+```
+
+**Yanıt (204):** Gövde yok
+
+#### Stok Rezerve Et
+
+```
+POST /api/v1/inventory/stocks/{id}/reserve
+```
+
+**İstek:**
+```json
+{
+  "quantity": "10.00",
+  "unit": "KG",
+  "reason": "Sipariş #12345"
+}
+```
+
+**Yanıt (201):**
+```json
+{ "reservation_id": "uuid" }
+```
+
+#### Rezervasyon Serbest Bırak
+
+```
+POST /api/v1/inventory/stocks/release
+```
+
+**İstek:**
+```json
+{
+  "product_id": "uuid",
+  "warehouse_id": "uuid",
+  "reservation_id": "uuid"
+}
+```
+
+**Yanıt (204):** Gövde yok
+
+#### Rezervasyon Tamamla (Commit)
+
+```
+POST /api/v1/inventory/stocks/commit
+```
+
+**İstek:**
+```json
+{
+  "product_id": "uuid",
+  "warehouse_id": "uuid",
+  "reservation_id": "uuid"
+}
+```
+
+**Yanıt (204):** Gövde yok
+
+#### Stok Hareketi Listesi
+
+```
+GET /api/v1/inventory/stocks/{id}/movements
+```
+
+**Yanıt (200):**
+```json
+[
+  {
+    "id": "uuid",
+    "type": "REPLENISH",
+    "quantity": { "value": "50.00", "unit": "KG" },
+    "reason": "Tedarikçi teslimatı",
+    "occurred_at": "2024-01-15T09:00:00Z"
+  }
+]
 ```
 
 ---
 
-### 6.2 Stok (Inventory)
+### 6.3 Siparişler (Orders)
 
-| Method | Path | İzin | Açıklama |
-|--------|------|------|----------|
-| `POST` | `/api/v1/inventory/reserve` | `INVENTORY:CREATE` | Stok rezerve et |
-| `DELETE` | `/api/v1/inventory/reservations/{id}` | `INVENTORY:UPDATE` | Rezervasyonu iptal et |
-| `POST` | `/api/v1/inventory/commit` | `INVENTORY:UPDATE` | Rezervasyonu tamamla |
-| `POST` | `/api/v1/inventory/replenish` | `INVENTORY:CREATE` | Stok girişi |
-| `GET` | `/api/v1/inventory/stock?product_id=&warehouse_id=` | `INVENTORY:VIEW` | Stok sorgula |
-| `GET` | `/api/v1/inventory/low-stock` | `INVENTORY:VIEW` | Eşiğin altındaki stoklar |
+> **Önemli:** Order BC tüm alanları **camelCase** kullanır.
 
-> Stok kaydı yoksa `replenish` 404 döner. İlk stok kaydı doğrudan DB üzerinden oluşturulmalı veya ayrı bir provizyon akışıyla açılmalıdır.
+#### Sipariş Listesi
 
-**Stok rezerve et:**
+```
+GET /api/v1/orders
+```
+
+Query parametreleri: `?status=DRAFT`, `?customer_id={uuid}`
+
+**Yanıt (200):**
 ```json
-// POST /api/v1/inventory/reserve
+[
+  {
+    "id": "uuid",
+    "tenantId": "uuid",
+    "customerId": "uuid",
+    "warehouseId": "uuid",
+    "status": "DRAFT",
+    "requestedDate": "2024-02-01T00:00:00Z",
+    "notes": "Özel not",
+    "createdAt": "2024-01-15T09:00:00Z"
+  }
+]
+```
+
+#### Sipariş Oluştur
+
+```
+POST /api/v1/orders
+```
+
+**İstek:**
+```json
 {
-  "product_id": "prod_01",
-  "warehouse_id": "wh_main",
-  "order_id": "ord_01",
-  "quantity": 500.0,
-  "unit": "kg",
-  "expires_at": "2024-06-20T00:00:00Z"
+  "customerId": "uuid",
+  "warehouseId": "uuid",
+  "requestedDate": "2024-02-01T00:00:00Z",
+  "notes": "Özel not"
 }
 ```
 
-**Stok girişi:**
+**Yanıt (201):**
 ```json
-// POST /api/v1/inventory/replenish
+{ "id": "uuid" }
+```
+
+#### Sipariş Detay
+
+```
+GET /api/v1/orders/{id}
+```
+
+**Yanıt (200):**
+```json
 {
-  "product_id": "prod_01",
-  "warehouse_id": "wh_main",
-  "quantity": 1000.0,
-  "unit": "kg",
-  "source": "purchase",
-  "source_id": "po_01"
+  "id": "uuid",
+  "tenantId": "uuid",
+  "customerId": "uuid",
+  "customerName": "ABC Ltd.",
+  "warehouseId": "uuid",
+  "warehouseName": "Ana Depo",
+  "status": "CONFIRMED",
+  "requestedDate": "2024-02-01T00:00:00Z",
+  "notes": "...",
+  "lines": [
+    {
+      "id": "uuid",
+      "productId": "uuid",
+      "productName": "Ürün Adı",
+      "variantId": "uuid",
+      "quantity": "10.00",
+      "unit": "KG",
+      "unitPriceAmount": "150.00",
+      "unitPriceCurrency": "TRY",
+      "discountRate": "0.05",
+      "vatRate": "0.20",
+      "vatIncluded": false
+    }
+  ],
+  "shippingAddress": {
+    "street": "Cadde No:1",
+    "district": "Kadıköy",
+    "city": "İstanbul",
+    "postalCode": "34700",
+    "country": "TR"
+  },
+  "createdAt": "2024-01-15T09:00:00Z"
 }
 ```
 
-**Stok yanıtı:**
+#### Sipariş Satırı Ekle
+
+```
+POST /api/v1/orders/{id}/lines
+```
+
+**İstek:**
 ```json
 {
-  "id": "stock_01",
-  "product_id": "prod_01",
-  "warehouse_id": "wh_main",
-  "total": 1000.0,
-  "reserved": 500.0,
-  "available": 500.0,
-  "unit": "kg"
+  "productId": "uuid",
+  "variantId": "uuid",
+  "quantity": "10.00",
+  "unit": "KG",
+  "unitPriceAmount": "150.00",
+  "unitPriceCurrency": "TRY",
+  "discountRate": "0.05",
+  "vatRate": "0.20",
+  "vatIncluded": false,
+  "contractPrice": "145.00",
+  "contractCurrency": "TRY"
 }
 ```
 
----
+> `variantId`, `contractPrice`, `contractCurrency` opsiyoneldir.
 
-### 6.3 Sipariş (Orders)
+**Yanıt (204):** Gövde yok
 
-| Method | Path | İzin | Açıklama |
-|--------|------|------|----------|
-| `POST` | `/api/v1/orders` | `ORDERS:CREATE` | Sipariş oluştur |
-| `GET` | `/api/v1/orders/{id}` | `ORDERS:VIEW` | Sipariş detayı |
-| `GET` | `/api/v1/orders/pending` | `ORDERS:VIEW` | Bekleyen siparişler |
-| `GET` | `/api/v1/customers/{customerId}/orders` | `ORDERS:VIEW` | Müşteri siparişleri |
-| `POST` | `/api/v1/orders/{id}/lines` | `ORDERS:CREATE` | Satır ekle |
-| `POST` | `/api/v1/orders/{id}/confirm` | `ORDERS:APPROVE` | Onayla |
-| `POST` | `/api/v1/orders/{id}/cancel` | `ORDERS:APPROVE` | İptal et |
-| `POST` | `/api/v1/orders/{id}/split` | `ORDERS:APPROVE` | Böl |
-| `POST` | `/api/v1/orders/{id}/lines/{lineId}/fulfill-stock` | `ORDERS:APPROVE` | Stoktan karşıla |
-| `POST` | `/api/v1/orders/{id}/lines/{lineId}/fulfill-production` | `ORDERS:APPROVE` | Üretimden karşıla |
-| `POST` | `/api/v1/orders/{id}/lines/{lineId}/substitutions` | `ORDERS:CREATE` | İkame talebi |
-| `POST` | `/api/v1/orders/{id}/substitutions/{subId}/approve` | `ORDERS:APPROVE` | İkameyi onayla |
-| `POST` | `/api/v1/orders/{id}/substitutions/{subId}/reject` | `ORDERS:APPROVE` | İkameyi reddet |
-| `PATCH` | `/api/v1/orders/{id}/requested-date` | `ORDERS:UPDATE` | Talep tarihi güncelle |
+#### Sipariş Satırı Kaldır
 
-> Sipariş request body **camelCase** JSON kullanır (`customerId`, `warehouseId`, `requestedDate`, `productId`, `unitPriceAmount` vb.)
+```
+DELETE /api/v1/orders/{id}/lines/{lineId}
+```
 
-**Sipariş oluştur:**
+**Yanıt (204):** Gövde yok
+
+#### Sipariş Onayla
+
+```
+POST /api/v1/orders/{id}/confirm
+```
+
+**İstek:** Gövde yok
+
+**Yanıt (204):** Gövde yok
+
+#### Sipariş İptal Et
+
+```
+POST /api/v1/orders/{id}/cancel
+```
+
+**İstek:**
 ```json
-// POST /api/v1/orders
+{ "reason": "Müşteri isteği üzerine iptal" }
+```
+
+**Yanıt (204):** Gövde yok
+
+#### Teslimat Adresi Güncelle
+
+```
+PUT /api/v1/orders/{id}/shipping-address
+```
+
+**İstek:**
+```json
 {
-  "customerId": "cust_01",
-  "warehouseId": "wh_main",
-  "requestedDate": "2024-07-01T00:00:00Z",
-  "notes": "Acil teslimat",
-  "street": "Atatürk Cad. No:5",
+  "street": "Yeni Cadde No:5",
+  "district": "Beşiktaş",
   "city": "İstanbul",
-  "district": "Kadıköy",
-  "postalCode": "34710",
+  "postalCode": "34353",
   "country": "TR"
 }
 ```
 
-**Satır ekle:**
+**Yanıt (204):** Gövde yok
+
+#### Talep Tarihi Güncelle
+
+```
+PUT /api/v1/orders/{id}/requested-date
+```
+
+**İstek:**
 ```json
-// POST /api/v1/orders/{id}/lines
 {
-  "productId": "prod_01",
-  "quantity": 500.0,
-  "unit": "kg",
-  "unitPriceAmount": "45.50",
-  "unitPriceCurrency": "TRY",
-  "discountRate": "0.05",
-  "vatRate": "0.18",
-  "vatIncluded": false
+  "requestedDate": "2024-03-01T00:00:00Z",
+  "reason": "Üretim gecikmesi"
 }
 ```
 
-> `vatRate` 0-1 arasında ondalık: `0.18` = %18
+**Yanıt (204):** Gövde yok
+
+#### Siparişi Böl
+
+```
+POST /api/v1/orders/{id}/split
+```
+
+**İstek:**
+```json
+{
+  "lineIds": ["uuid1", "uuid2"]
+}
+```
+
+**Yanıt (201):**
+```json
+{ "newOrderId": "uuid" }
+```
+
+#### Stoktan Karşıla
+
+```
+POST /api/v1/orders/{id}/lines/{lineId}/fulfill/stock
+```
+
+**İstek:**
+```json
+{
+  "reservationId": "uuid",
+  "quantity": "10.00",
+  "unit": "KG"
+}
+```
+
+**Yanıt (204):** Gövde yok
+
+#### Üretimden Karşıla
+
+```
+POST /api/v1/orders/{id}/lines/{lineId}/fulfill/production
+```
+
+**İstek:**
+```json
+{
+  "productionOrderId": "uuid",
+  "quantity": "10.00",
+  "unit": "KG"
+}
+```
+
+**Yanıt (204):** Gövde yok
+
+#### İkame Talebi Oluştur
+
+```
+POST /api/v1/orders/{id}/lines/{lineId}/substitution-request
+```
+
+**İstek:**
+```json
+{ "substituteId": "uuid" }
+```
+
+**Yanıt (204):** Gövde yok
+
+#### İkame Onayla
+
+```
+POST /api/v1/orders/{id}/lines/{lineId}/approve-substitution
+```
+
+**İstek:**
+```json
+{
+  "newUnitPriceAmount": "140.00",
+  "newUnitPriceCurrency": "TRY",
+  "newDiscountRate": "0.05",
+  "newVatRate": "0.20",
+  "newVatIncluded": false
+}
+```
+
+**Yanıt (204):** Gövde yok
+
+#### İkame Reddet
+
+```
+POST /api/v1/orders/{id}/lines/{lineId}/reject-substitution
+```
+
+**İstek:** Gövde yok
+
+**Yanıt (204):** Gövde yok
 
 ---
 
 ### 6.4 Katalog (Catalog)
 
-| Method | Path | İzin | Açıklama |
-|--------|------|------|----------|
-| `POST` | `/api/v1/catalog/products` | `CATALOG:CREATE` | Ürün oluştur |
-| `POST` | `/api/v1/catalog/products/{id}/variants` | `CATALOG:CREATE` | Varyant ekle |
-| `PUT` | `/api/v1/catalog/products/{id}/variants/{vid}/price` | `CATALOG:UPDATE` | Liste fiyatı güncelle |
-| `POST` | `/api/v1/catalog/products/{id}/recipes` | `CATALOG:CREATE` | Reçete ekle |
-| `POST` | `/api/v1/catalog/products/{id}/discontinue` | `CATALOG:APPROVE` | Üretimi durdur |
-| `GET` | `/api/v1/catalog/products/{id}/color-group` | `CATALOG:VIEW` | Renk grubu |
-| `POST` | `/api/v1/catalog/categories` | `CATALOG:CREATE` | Kategori oluştur |
-| `POST` | `/api/v1/catalog/price-rules` | `CATALOG:CREATE` | Fiyat kuralı oluştur |
+#### Ürün Oluştur
 
-**Ürün oluştur:**
+```
+POST /api/v1/catalog/products
+```
+
+**İstek:**
 ```json
-// POST /api/v1/catalog/products
 {
-  "category_id": "cat_plastik",
-  "code": "PP-BLACK-001",
-  "name": "Polipropilen Siyah",
-  "unit": "kg",
-  "brand": "Sabic"
+  "code": "URN-001",
+  "name": "Plastik Kova",
+  "category_id": "uuid",
+  "unit": "ADET",
+  "description": "5 lt plastik kova"
 }
 ```
 
-**Varyant ekle:**
-```json
-// POST /api/v1/catalog/products/{id}/variants
-{
-  "variant_id": "var_01",
-  "code": "PP-BLACK-001-5KG",
-  "name": "5kg Torba",
-  "color_code": "#000000",
-  "price_amount": "45.50",
-  "price_currency": "TRY",
-  "price_vat_rate": "0.20"
-}
+**Yanıt (201):** Gövde yok
+
+#### Ürün Listesi
+
+```
+GET /api/v1/catalog/products
 ```
 
-**Reçete ekle:**
+**Yanıt (200):**
 ```json
-// POST /api/v1/catalog/products/{id}/recipes
-{
-  "recipe_id": "rec_01",
-  "variant_id": "var_01",
-  "ingredients": [
-    {
-      "material_id": "mat_pp_raw",
-      "material_type": "plastic_granule",
-      "qty_value": 1.05,
-      "qty_unit": "kg",
-      "ratio": 0.95
-    }
-  ],
-  "valid_from": "2024-01-01T00:00:00Z"
-}
+[
+  {
+    "id": "uuid",
+    "tenant_id": "uuid",
+    "code": "URN-001",
+    "name": "Plastik Kova",
+    "category_id": "uuid",
+    "unit": "ADET",
+    "description": "...",
+    "status": "active"
+  }
+]
 ```
 
-> `material_type` geçerli değerleri: `plastic_granule`, `additive`, `packaging`, `semi_finished`, `other`
+#### Ürün Detay
+
+```
+GET /api/v1/catalog/products/{id}
+```
+
+**Yanıt (200):** Tek ürün nesnesi
+
+#### Ürün Güncelle
+
+```
+PUT /api/v1/catalog/products/{id}
+```
+
+**İstek:** Oluşturma ile aynı format
+
+**Yanıt (204):** Gövde yok
+
+#### Ürün Arşivle
+
+```
+POST /api/v1/catalog/products/{id}/archive
+```
+
+**İstek:** Gövde yok
+
+**Yanıt (204):** Gövde yok
 
 ---
 
-### 6.5 Müşteri / İş Ortağı (Customer)
+#### Varyant Ekle
 
-| Method | Path | İzin | Açıklama |
-|--------|------|------|----------|
-| `POST` | `/api/v1/customers` | `CUSTOMERS:CREATE` | İş ortağı oluştur |
-| `GET` | `/api/v1/customers?q=&limit=` | `CUSTOMERS:VIEW` | Ara / listele |
-| `GET` | `/api/v1/customers/{id}` | `CUSTOMERS:VIEW` | Detay |
-| `GET` | `/api/v1/customers/by-tax-number?tax_number=` | `CUSTOMERS:VIEW` | VKN ile getir |
-| `GET` | `/api/v1/customers/credit-exceeded` | `CUSTOMERS:VIEW` | Kredi limiti aşanlar |
-| `POST` | `/api/v1/customers/{id}/customer-role` | `CUSTOMERS:UPDATE` | Müşteri rolü ekle |
-| `POST` | `/api/v1/customers/{id}/supplier-role` | `CUSTOMERS:UPDATE` | Tedarikçi rolü ekle |
-| `POST` | `/api/v1/customers/{id}/addresses` | `CUSTOMERS:UPDATE` | Adres ekle |
-| `PUT` | `/api/v1/customers/{id}/addresses/{addrId}/default` | `CUSTOMERS:UPDATE` | Varsayılan adres |
-| `GET` | `/api/v1/customers/{id}/addresses/default` | `CUSTOMERS:VIEW` | Varsayılan adresi getir |
-| `PATCH` | `/api/v1/customers/{id}/credit-limit` | `CUSTOMERS:UPDATE` | Kredi limiti güncelle |
-| `POST` | `/api/v1/customers/{id}/blacklist` | `CUSTOMERS:APPROVE` | Kara listeye al |
+```
+POST /api/v1/catalog/products/{id}/variants
+```
 
-**İş ortağı oluştur:**
+**İstek:**
 ```json
-// POST /api/v1/customers
 {
-  "partner_type": "company",
-  "tax_number": "1234567890",
-  "tax_office": "Kadıköy",
-  "company_name": "ABC Plastik A.Ş.",
-  "email": "info@abcplastik.com",
-  "phone": "+905551234567",
-  "billing_street": "Sanayi Cad. No:12",
-  "billing_district": "Ümraniye",
-  "billing_city": "İstanbul",
-  "billing_postal": "34760",
-  "billing_country": "TR"
+  "sku": "URN-001-MAVI",
+  "color_group_id": "uuid",
+  "attributes": { "renk": "mavi", "boyut": "5lt" },
+  "price_amount": 125.50,
+  "price_currency": "TRY"
 }
 ```
 
-**Müşteri rolü ekle:**
+> `price_amount` **float64** sayısal değerdir (string değil).
+
+**Yanıt (201):**
 ```json
-// POST /api/v1/customers/{id}/customer-role
+{ "id": "uuid" }
+```
+
+#### Varyant Listesi
+
+```
+GET /api/v1/catalog/products/{id}/variants
+```
+
+**Yanıt (200):**
+```json
+[
+  {
+    "id": "uuid",
+    "product_id": "uuid",
+    "sku": "URN-001-MAVI",
+    "color_group_id": "uuid",
+    "attributes": { "renk": "mavi" },
+    "price_amount": 125.50,
+    "price_currency": "TRY",
+    "status": "active"
+  }
+]
+```
+
+---
+
+#### Reçete Ekle / Güncelle
+
+```
+PUT /api/v1/catalog/products/{id}/recipe
+```
+
+**İstek:**
+```json
+{
+  "recipe_id": "uuid",
+  "variant_id": "uuid",
+  "ingredients": [
+    {
+      "material_id": "uuid",
+      "material_type": "RAW",
+      "qty_value": "2.50",
+      "qty_unit": "KG",
+      "ratio": "0.25"
+    }
+  ],
+  "valid_from": "2024-01-01T00:00:00Z",
+  "valid_until": "2024-12-31T23:59:59Z"
+}
+```
+
+> `variant_id` ve `valid_until` opsiyoneldir.
+
+**Yanıt (204):** Gövde yok
+
+#### Reçete Detay
+
+```
+GET /api/v1/catalog/products/{id}/recipe
+```
+
+**Yanıt (200):** Reçete nesnesi
+
+---
+
+#### Renk Grubu Oluştur
+
+```
+POST /api/v1/catalog/color-groups
+```
+
+**İstek:**
+```json
+{ "name": "Mavi Tonları", "code": "MAVI" }
+```
+
+**Yanıt (201):**
+```json
+{ "id": "uuid" }
+```
+
+#### Renk Grubu Listesi
+
+```
+GET /api/v1/catalog/color-groups
+```
+
+**Yanıt (200):**
+```json
+[
+  {
+    "id": "uuid",
+    "tenant_id": "uuid",
+    "name": "Mavi Tonları",
+    "code": "MAVI",
+    "status": "active"
+  }
+]
+```
+
+---
+
+#### Kategori Oluştur
+
+```
+POST /api/v1/catalog/categories
+```
+
+**İstek:**
+```json
+{
+  "parent_id": "uuid",
+  "name": "Kaplar",
+  "level": 1,
+  "sort_order": 1
+}
+```
+
+> `parent_id` opsiyoneldir (kök kategori için).
+
+**Yanıt (201):**
+```json
+{ "id": "uuid" }
+```
+
+#### Kategori Listesi
+
+```
+GET /api/v1/catalog/categories
+```
+
+**Yanıt (200):**
+```json
+[
+  {
+    "id": "uuid",
+    "parent_id": "uuid",
+    "name": "Kaplar",
+    "level": 1,
+    "sort_order": 1
+  }
+]
+```
+
+---
+
+#### Fiyat Kuralı Oluştur
+
+```
+POST /api/v1/catalog/price-rules
+```
+
+**İstek:**
+```json
+{
+  "customer_id": "uuid",
+  "product_id": "uuid",
+  "variant_id": "uuid",
+  "rule_type": "DISCOUNT_RATE",
+  "value": "0.10",
+  "currency": "TRY",
+  "valid_from": "2024-01-01T00:00:00Z",
+  "valid_until": "2024-12-31T23:59:59Z"
+}
+```
+
+> `product_id`, `variant_id`, `valid_until` opsiyoneldir.
+
+**Yanıt (201):**
+```json
+{ "id": "uuid" }
+```
+
+#### Fiyat Kuralı Listesi
+
+```
+GET /api/v1/catalog/price-rules
+```
+
+Query parametresi: `?customer_id={uuid}`
+
+**Yanıt (200):** Fiyat kuralı dizisi
+
+---
+
+### 6.5 Müşteri (Customer)
+
+#### Ortak (Partner) Oluştur
+
+```
+POST /api/v1/customers/partners
+```
+
+**İstek:**
+```json
+{
+  "partner_type": "COMPANY",
+  "tax_number": "1234567890",
+  "tax_office": "Kadıköy",
+  "company_name": "ABC Ltd.",
+  "first_name": "",
+  "last_name": "",
+  "email": "info@abc.com",
+  "phone": "+90 555 000 0000"
+}
+```
+
+**Yanıt (201):**
+```json
+{ "id": "uuid" }
+```
+
+#### Ortak Listesi
+
+```
+GET /api/v1/customers/partners
+```
+
+Query parametreleri: `?name=ABC`, `?city=İstanbul`, `?role=CUSTOMER`, `?status=active`
+
+**Yanıt (200):**
+```json
+[
+  {
+    "id": "uuid",
+    "tenant_id": "uuid",
+    "partner_type": "COMPANY",
+    "tax_number": "1234567890",
+    "tax_office": "Kadıköy",
+    "company_name": "ABC Ltd.",
+    "first_name": "",
+    "last_name": "",
+    "email": "info@abc.com",
+    "phone": "+90 555 000 0000",
+    "status": "active"
+  }
+]
+```
+
+#### Ortak Detay
+
+```
+GET /api/v1/customers/partners/{id}
+```
+
+**Yanıt (200):** Tek ortak nesnesi
+
+#### Ortak Güncelle
+
+```
+PUT /api/v1/customers/partners/{id}
+```
+
+**İstek:** Oluşturma ile aynı format
+
+**Yanıt (204):** Gövde yok
+
+---
+
+#### Müşteri Rolü Ekle
+
+```
+POST /api/v1/customers/partners/{id}/roles/customer
+```
+
+**İstek:**
+```json
 {
   "credit_amount": "50000.00",
   "credit_currency": "TRY",
   "payment_term_days": 30,
-  "discount_rate": 0.05,
+  "discount_rate": "0.05",
   "segment": "A",
-  "assigned_rep_id": "usr_01"
+  "assigned_rep_id": "uuid"
 }
 ```
+
+**Yanıt (204):** Gövde yok
+
+#### Tedarikçi Rolü Ekle
+
+```
+POST /api/v1/customers/partners/{id}/roles/supplier
+```
+
+**İstek:**
+```json
+{
+  "payment_term_days": 30,
+  "lead_time_days": 7,
+  "currency": "TRY"
+}
+```
+
+> Tedarikçi rolünde `discount_rate` yoktur.
+
+**Yanıt (204):** Gövde yok
+
+---
+
+#### Adres Ekle
+
+```
+POST /api/v1/customers/partners/{id}/addresses
+```
+
+**İstek:**
+```json
+{
+  "label": "Merkez Ofis",
+  "street": "Atatürk Cad. No:10",
+  "district": "Kadıköy",
+  "city": "İstanbul",
+  "postal_code": "34700",
+  "country": "TR"
+}
+```
+
+**Yanıt (201):**
+```json
+{ "id": "uuid" }
+```
+
+#### Adres Listesi
+
+```
+GET /api/v1/customers/partners/{id}/addresses
+```
+
+**Yanıt (200):**
+```json
+[
+  {
+    "id": "uuid",
+    "label": "Merkez Ofis",
+    "street": "Atatürk Cad. No:10",
+    "district": "Kadıköy",
+    "city": "İstanbul",
+    "postal_code": "34700",
+    "country": "TR",
+    "is_default": true
+  }
+]
+```
+
+#### Varsayılan Adres Güncelle
+
+```
+PUT /api/v1/customers/partners/{id}/addresses/default
+```
+
+**İstek:**
+```json
+{ "address_id": "uuid" }
+```
+
+**Yanıt (204):** Gövde yok
+
+---
+
+#### Kredi Limiti Güncelle
+
+```
+PUT /api/v1/customers/partners/{id}/roles/customer/credit-limit
+```
+
+**İstek:**
+```json
+{
+  "amount": "75000.00",
+  "currency": "TRY"
+}
+```
+
+**Yanıt (204):** Gövde yok
 
 ---
 
 ### 6.6 Satın Alma (Purchasing)
 
-| Method | Path | İzin | Açıklama |
-|--------|------|------|----------|
-| `POST` | `/api/v1/purchasing/orders` | `PURCHASING:CREATE` | Satın alma emri |
-| `GET` | `/api/v1/purchasing/orders/{id}` | `PURCHASING:VIEW` | Detay |
-| `GET` | `/api/v1/purchasing/orders` | `PURCHASING:VIEW` | Açık emirler |
-| `GET` | `/api/v1/purchasing/orders?supplier_id=` | `PURCHASING:VIEW` | Tedarikçiye göre |
-| `POST` | `/api/v1/purchasing/orders/{id}/lines` | `PURCHASING:CREATE` | Satır ekle |
-| `POST` | `/api/v1/purchasing/orders/{id}/confirm` | `PURCHASING:APPROVE` | Onayla |
-| `POST` | `/api/v1/purchasing/orders/{id}/receipts` | `PURCHASING:CREATE` | Mal kabul |
-| `POST` | `/api/v1/purchasing/orders/{id}/cancel` | `PURCHASING:APPROVE` | İptal |
-| `POST` | `/api/v1/purchasing/orders/{id}/returns` | `PURCHASING:CREATE` | İade |
-| `PATCH` | `/api/v1/purchasing/orders/{id}/receipts/{rid}/invoice` | `PURCHASING:UPDATE` | Fatura bilgisi ekle |
-| `POST` | `/api/v1/purchasing/materials` | `PURCHASING:CREATE` | Hammadde tanımla |
-| `GET` | `/api/v1/purchasing/materials/{id}` | `PURCHASING:VIEW` | Hammadde detayı |
-| `PATCH` | `/api/v1/purchasing/materials/{id}/supplier` | `PURCHASING:UPDATE` | Tercihli tedarikçi |
+#### Satın Alma Siparişi Oluştur
 
-**Satın alma emri oluştur:**
+```
+POST /api/v1/purchasing/orders
+```
+
+**İstek:**
 ```json
-// POST /api/v1/purchasing/orders
 {
-  "supplier_id": "cust_sup_01",
-  "warehouse_id": "wh_main",
+  "supplier_id": "uuid",
+  "warehouse_id": "uuid",
   "source": "MANUAL",
-  "expected_date": "2024-06-30T00:00:00Z",
-  "notes": "Acil sipariş"
+  "source_ref": "ÜR-2024-001",
+  "expected_date": "2024-02-15T00:00:00Z",
+  "notes": "Acil teslimat"
 }
 ```
 
-> `source` geçerli değerleri: `MANUAL`, `ORDER`
+> `source_ref` ve `notes` opsiyoneldir.
 
-**Mal kabul:**
+**Yanıt (201):**
 ```json
-// POST /api/v1/purchasing/orders/{id}/receipts
+{ "id": "uuid" }
+```
+
+#### Satın Alma Siparişi Listesi
+
+```
+GET /api/v1/purchasing/orders
+```
+
+Query parametreleri: `?status=OPEN`, `?supplier_id={uuid}`
+
+**Yanıt (200):**
+```json
+[
+  {
+    "id": "uuid",
+    "tenant_id": "uuid",
+    "status": "OPEN",
+    "source": "MANUAL",
+    "source_ref": "ÜR-2024-001",
+    "expected_at": "2024-02-15T00:00:00Z",
+    "notes": "Acil teslimat",
+    "supplier_id": "uuid",
+    "supplier_name": "XYZ Tedarik",
+    "warehouse_id": "uuid",
+    "warehouse_name": "Ana Depo",
+    "warehouse_code": "AD-01"
+  }
+]
+```
+
+#### Satın Alma Siparişi Detay
+
+```
+GET /api/v1/purchasing/orders/{id}
+```
+
+**Yanıt (200):**
+```json
+{
+  "id": "uuid",
+  "tenant_id": "uuid",
+  "status": "OPEN",
+  "source": "MANUAL",
+  "source_ref": "ÜR-2024-001",
+  "expected_at": "2024-02-15T00:00:00Z",
+  "notes": "...",
+  "supplier_id": "uuid",
+  "supplier_name": "XYZ Tedarik",
+  "warehouse_id": "uuid",
+  "warehouse_name": "Ana Depo",
+  "warehouse_code": "AD-01",
+  "lines": [
+    {
+      "id": "uuid",
+      "material_id": "uuid",
+      "material_name": "Hammadde Adı",
+      "material_code": "HM-001",
+      "ordered_qty_value": "100.00",
+      "ordered_qty_unit": "KG",
+      "received_qty_value": "50.00",
+      "unit_price_amount": "25.00",
+      "unit_price_currency": "TRY",
+      "status": "PARTIAL"
+    }
+  ]
+}
+```
+
+#### Satır Ekle
+
+```
+POST /api/v1/purchasing/orders/{id}/lines
+```
+
+**İstek:**
+```json
+{
+  "material_id": "uuid",
+  "quantity": "100.00",
+  "unit": "KG",
+  "unit_price_amount": "25.00",
+  "unit_price_currency": "TRY"
+}
+```
+
+**Yanıt (204):** Gövde yok
+
+#### Satır Güncelle
+
+```
+PATCH /api/v1/purchasing/orders/{id}/lines/{line_id}
+```
+
+**İstek:**
+```json
+{
+  "quantity": "150.00",
+  "unit": "KG",
+  "unit_price_amount": "24.00",
+  "unit_price_currency": "TRY"
+}
+```
+
+**Yanıt (204):** Gövde yok
+
+#### Satır Sil
+
+```
+DELETE /api/v1/purchasing/orders/{id}/lines/{line_id}
+```
+
+**Yanıt (204):** Gövde yok
+
+#### Siparişi Onayla
+
+```
+POST /api/v1/purchasing/orders/{id}/approve
+```
+
+**İstek:** Gövde yok
+
+**Yanıt (204):** Gövde yok
+
+#### Siparişi İptal Et
+
+```
+POST /api/v1/purchasing/orders/{id}/cancel
+```
+
+**İstek:** Gövde yok
+
+**Yanıt (204):** Gövde yok
+
+---
+
+#### Mal Kabul Kaydı
+
+```
+POST /api/v1/purchasing/orders/{id}/receipts
+```
+
+**İstek:**
+```json
 {
   "lines": [
     {
-      "order_line_id": "pol_01",
-      "material_id": "mat_01",
-      "quantity": 500.0,
-      "unit": "kg"
+      "order_line_id": "uuid",
+      "material_id": "uuid",
+      "quantity": "50.00",
+      "unit": "KG"
     }
   ],
-  "notes": "Sorunsuz teslim"
+  "notes": "Kısmi teslimat"
+}
+```
+
+**Yanıt (204):** Gövde yok
+
+#### Mal İadesi Kaydı
+
+```
+POST /api/v1/purchasing/orders/{id}/returns
+```
+
+**İstek:**
+```json
+{
+  "lines": [
+    {
+      "material_id": "uuid",
+      "quantity": "10.00",
+      "unit": "KG",
+      "unit_price_amount": "25.00",
+      "unit_price_currency": "TRY"
+    }
+  ],
+  "reason": "Hasarlı ürün"
+}
+```
+
+**Yanıt (201):**
+```json
+{ "id": "uuid" }
+```
+
+#### Fatura Bilgisi Ekle
+
+```
+PUT /api/v1/purchasing/orders/{id}/receipts/{receipt_id}/invoice
+```
+
+**İstek:**
+```json
+{
+  "invoice_number": "INV-2024-0042",
+  "invoice_pdf_url": "https://..."
+}
+```
+
+**Yanıt (204):** Gövde yok
+
+---
+
+#### Hammadde Oluştur
+
+```
+POST /api/v1/purchasing/materials
+```
+
+**İstek:**
+```json
+{
+  "code": "HM-001",
+  "name": "Polipropilen",
+  "material_type": "POLYMER",
+  "unit": "KG",
+  "min_order_qty": "500.00",
+  "min_order_qty_unit": "KG",
+  "lead_time_days": 7
+}
+```
+
+**Yanıt (201):**
+```json
+{ "id": "uuid" }
+```
+
+#### Hammadde Listesi
+
+```
+GET /api/v1/purchasing/materials
+```
+
+Query parametresi: `?type=POLYMER`
+
+**Yanıt (200):**
+```json
+[
+  {
+    "id": "uuid",
+    "tenant_id": "uuid",
+    "code": "HM-001",
+    "name": "Polipropilen",
+    "material_type": "POLYMER",
+    "unit": "KG",
+    "min_order_qty": "500.00",
+    "lead_time_days": 7,
+    "status": "active",
+    "supplier_id": "uuid"
+  }
+]
+```
+
+#### Hammadde Detay
+
+```
+GET /api/v1/purchasing/materials/{id}
+```
+
+**Yanıt (200):** Tek hammadde nesnesi
+
+#### Hammadde Toplu Oluştur
+
+```
+POST /api/v1/purchasing/materials/bulk
+```
+
+**İstek:**
+```json
+{
+  "materials": [
+    {
+      "code": "HM-001",
+      "name": "Polipropilen",
+      "material_type": "POLYMER",
+      "unit": "KG",
+      "min_order_qty": "500.00",
+      "min_order_qty_unit": "KG",
+      "lead_time_days": 7
+    }
+  ]
+}
+```
+
+**Yanıt (207):**
+```json
+{
+  "results": [
+    { "code": "HM-001", "id": "uuid", "error": null },
+    { "code": "HM-002", "id": null, "error": "duplicate code" }
+  ]
+}
+```
+
+#### Hammadde Stok İkmal
+
+```
+POST /api/v1/purchasing/materials/{id}/stock/replenish
+```
+
+**İstek:**
+```json
+{
+  "warehouse_id": "uuid",
+  "quantity": "500.00",
+  "unit": "KG",
+  "reason": "Satın alma siparişi"
+}
+```
+
+**Yanıt (204):** Gövde yok
+
+#### Hammadde Stok Düzelt
+
+```
+POST /api/v1/purchasing/materials/{id}/stock/adjust
+```
+
+**İstek:**
+```json
+{
+  "warehouse_id": "uuid",
+  "delta": "-10.00",
+  "unit": "KG",
+  "reason": "Fire kaydı"
+}
+```
+
+**Yanıt (204):** Gövde yok
+
+#### Hammadde İstatistikleri
+
+```
+GET /api/v1/purchasing/materials/{id}/stats
+```
+
+**Yanıt (200):**
+```json
+{
+  "material_id": "uuid",
+  "material_name": "Polipropilen",
+  "unit": "KG",
+  "stock_total": "1000.00",
+  "stock_reserved": "200.00",
+  "stock_available": "800.00",
+  "open_orders_count": 3,
+  "total_ordered_qty": "2000.00",
+  "total_received_qty": "1500.00"
 }
 ```
 
@@ -578,134 +1552,528 @@ Tüm endpoint'ler `Authorization: Bearer <token>` ve `X-Tenant-ID: <uuid>` gerek
 
 ### 6.7 Muhasebe (Accounting)
 
-| Method | Path | İzin | Açıklama |
-|--------|------|------|----------|
-| `POST` | `/api/v1/accounting/accounts` | `ACCOUNTING:CREATE` | Hesap aç |
-| `GET` | `/api/v1/accounting/accounts?partner_id=` | `ACCOUNTING:VIEW` | Hesap getir |
-| `POST` | `/api/v1/accounting/accounts/{id}/debit` | `ACCOUNTING:CREATE` | Borç kaydet |
-| `POST` | `/api/v1/accounting/accounts/{id}/credit` | `ACCOUNTING:CREATE` | Alacak kaydet |
-| `POST` | `/api/v1/accounting/accounts/{id}/transactions/{tx_id}/paid` | `ACCOUNTING:APPROVE` | Ödendi işaretle |
-| `POST` | `/api/v1/accounting/accounts/{id}/freeze` | `ACCOUNTING:APPROVE` | Hesabı dondur |
-| `GET` | `/api/v1/accounting/accounts/{id}/transactions` | `ACCOUNTING:VIEW` | Hareketler |
-| `GET` | `/api/v1/accounting/accounts/{id}/transactions/overdue` | `ACCOUNTING:VIEW` | Vadesi geçmiş |
-| `GET` | `/api/v1/accounting/accounts/{id}/aging` | `ACCOUNTING:VIEW` | Yaşlandırma raporu |
-| `GET` | `/api/v1/accounting/accounts/{id}/balance` | `ACCOUNTING:VIEW` | Bakiye özeti |
+#### Hesap Aç
 
-> `{id}` path parametresi **iş ortağı ID'sidir** (`partner_id`), hesap ID'si değil.
+```
+POST /api/v1/accounting/accounts
+```
 
-**Borç kaydet:**
+**İstek:**
 ```json
-// POST /api/v1/accounting/accounts/{id}/debit
 {
-  "currency": "TRY",
-  "amount": "22750.00",
-  "source": "shipment",
-  "source_id": "shp_01",
-  "description": "Fatura #INV-2024-001",
-  "due_date": "2024-07-15T00:00:00Z"
+  "partner_id": "uuid",
+  "account_type": "RECEIVABLE"
 }
 ```
 
-> `source` geçerli değerleri: `shipment`, `payment`, `purchase`, `supplier_payment`, `adjustment`
+> `account_type`: `"RECEIVABLE"` veya `"PAYABLE"`
 
-**Yaşlandırma yanıtı:**
+**Yanıt (201):**
+```json
+{ "id": "uuid" }
+```
+
+#### Hesap Detay
+
+```
+GET /api/v1/accounting/accounts
+```
+
+Query parametresi: `?partner_id={uuid}`
+
+**Yanıt (200):**
+```json
+{
+  "id": "uuid",
+  "tenant_id": "uuid",
+  "partner_id": "uuid",
+  "account_type": "RECEIVABLE",
+  "status": "active",
+  "created_at": "2024-01-01T00:00:00Z",
+  "balances": [
+    {
+      "currency": "TRY",
+      "total_debit": "50000.00",
+      "total_credit": "30000.00",
+      "net_balance": "20000.00"
+    }
+  ]
+}
+```
+
+#### Borç Kaydı
+
+```
+POST /api/v1/accounting/accounts/{id}/debit
+```
+
+**İstek:**
 ```json
 {
   "currency": "TRY",
-  "current": "5000.00",
-  "days_30": "12000.00",
-  "days_60": "3500.00",
-  "days_90": "0.00",
-  "over_90": "2250.00",
-  "total_overdue": "17750.00",
-  "total": "22750.00"
+  "amount": "5000.00",
+  "source": "INVOICE",
+  "source_id": "uuid",
+  "description": "Fatura ödemesi",
+  "due_date": "2024-02-15T00:00:00Z"
 }
+```
+
+> `due_date` opsiyoneldir.
+
+**Yanıt (204):** Gövde yok
+
+#### Alacak Kaydı
+
+```
+POST /api/v1/accounting/accounts/{id}/credit
+```
+
+**İstek:**
+```json
+{
+  "currency": "TRY",
+  "amount": "5000.00",
+  "source": "PAYMENT",
+  "source_id": "uuid",
+  "description": "Ödeme alındı"
+}
+```
+
+**Yanıt (204):** Gövde yok
+
+#### Ödendi İşaretle
+
+```
+POST /api/v1/accounting/accounts/{id}/transactions/{txId}/mark-paid
+```
+
+**İstek:** Boş nesne `{}`
+
+**Yanıt (204):** Gövde yok
+
+#### Hesap Dondur
+
+```
+POST /api/v1/accounting/accounts/{id}/freeze
+```
+
+**İstek:**
+```json
+{ "reason": "Tahsilat sorunu" }
+```
+
+**Yanıt (204):** Gövde yok
+
+#### İşlem Listesi
+
+```
+GET /api/v1/accounting/accounts/{id}/transactions
+```
+
+**Yanıt (200):**
+```json
+[
+  {
+    "id": "uuid",
+    "currency": "TRY",
+    "amount": "5000.00",
+    "type": "DEBIT",
+    "source": "INVOICE",
+    "source_id": "uuid",
+    "description": "Fatura ödemesi",
+    "is_paid": false,
+    "due_date": "2024-02-15T00:00:00Z",
+    "occurred_at": "2024-01-15T09:00:00Z"
+  }
+]
+```
+
+#### Yaşlandırma Raporu
+
+```
+GET /api/v1/accounting/accounts/{id}/aging
+```
+
+Query parametresi: `?currency=TRY`
+
+**Yanıt (200):**
+```json
+{
+  "days_30": "10000.00",
+  "days_60": "5000.00",
+  "days_90": "2000.00",
+  "over_90": "1000.00"
+}
+```
+
+#### Bakiye Özeti
+
+```
+GET /api/v1/accounting/accounts/{id}/balance
+```
+
+**Yanıt (200):**
+```json
+[
+  {
+    "currency": "TRY",
+    "total_debit": "50000.00",
+    "total_credit": "30000.00",
+    "net_balance": "20000.00"
+  }
+]
 ```
 
 ---
 
-### 6.8 Tahsilat / Ödeme (Payments)
+### 6.8 Ödemeler (Payments)
 
-| Method | Path | İzin | Açıklama |
-|--------|------|------|----------|
-| `POST` | `/api/v1/payments/inbound` | `PAYMENTS:CREATE` | Tahsilat kaydet |
-| `POST` | `/api/v1/payments/outbound` | `PAYMENTS:CREATE` | Ödeme kaydet |
-| `GET` | `/api/v1/payments/{id}` | `PAYMENTS:VIEW` | Detay |
-| `GET` | `/api/v1/payments?partner_id=` | `PAYMENTS:VIEW` | İş ortağına göre |
-| `POST` | `/api/v1/payments/{id}/allocate` | `PAYMENTS:UPDATE` | İşleme bağla |
-| `POST` | `/api/v1/payments/{id}/clear` | `PAYMENTS:APPROVE` | Çek tahsil et |
-| `POST` | `/api/v1/payments/{id}/bounce` | `PAYMENTS:APPROVE` | Çek iade et |
-| `POST` | `/api/v1/payments/{id}/cancel` | `PAYMENTS:APPROVE` | İptal et |
-| `GET` | `/api/v1/payments/pending-checks` | `PAYMENTS:VIEW` | Bekleyen çekler |
-| `GET` | `/api/v1/payments/unallocated` | `PAYMENTS:VIEW` | Bağlanmamış ödemeler |
+#### Ödeme Kaydet
 
-**Tahsilat kaydet (çek):**
+```
+POST /api/v1/payments
+```
+
+**İstek:**
 ```json
-// POST /api/v1/payments/inbound
 {
-  "partner_id": "cust_01",
-  "method": "CHECK",
+  "partner_id": "uuid",
+  "direction": "INBOUND",
+  "method": "BANK_TRANSFER",
   "currency": "TRY",
-  "amount": "15000.00",
-  "description": "Haziran tahsilatı",
-  "received_at": "2024-06-15T10:00:00Z",
-  "check_number": "123456",
-  "check_bank": "Garanti Bankası",
-  "check_due_date": "2024-08-15T00:00:00Z",
-  "check_drawer": "ABC Plastik A.Ş."
+  "amount": "5000.00",
+  "description": "Fatura ödemesi",
+  "received_at": "2024-01-15T09:00:00Z",
+  "check_branch": "Kadıköy",
+  "check_account": "123456",
+  "note_number": "SN-001",
+  "note_due_date": "2024-03-01T00:00:00Z",
+  "note_issuer": "ABC Ltd."
 }
 ```
 
-> `method` geçerli değerleri: `CASH`, `CHECK`, `BANK_TRANSFER`, `PROMISSORY_NOTE`
+> `check_branch`, `check_account`, `note_number`, `note_due_date`, `note_issuer` opsiyoneldir (çek/senet ödemeleri için).
+> `received_at` zorunludur (RFC3339).
 
-**Ödemeyi işleme bağla:**
+**Yanıt (201):**
 ```json
-// POST /api/v1/payments/{id}/allocate
+{ "id": "uuid" }
+```
+
+#### Ödeme Listesi
+
+```
+GET /api/v1/payments
+```
+
+Query parametresi: `?partner_id={uuid}`
+
+**Yanıt (200):**
+```json
+[
+  {
+    "id": "uuid",
+    "tenant_id": "uuid",
+    "partner_id": "uuid",
+    "direction": "INBOUND",
+    "method": "BANK_TRANSFER",
+    "currency": "TRY",
+    "amount": "5000.00",
+    "remaining": "5000.00",
+    "status": "PENDING",
+    "description": "Fatura ödemesi",
+    "received_at": "2024-01-15T09:00:00Z",
+    "cleared_at": null,
+    "allocations": [
+      {
+        "id": "uuid",
+        "transaction_id": "uuid",
+        "amount": "2000.00",
+        "allocated_at": "2024-01-16T10:00:00Z"
+      }
+    ]
+  }
+]
+```
+
+#### Ödeme Detay
+
+```
+GET /api/v1/payments/{id}
+```
+
+**Yanıt (200):** Tek ödeme nesnesi
+
+#### Ödeme Tahsis Et
+
+```
+POST /api/v1/payments/{id}/allocate
+```
+
+**İstek:**
+```json
 {
-  "transaction_id": "tx_01",
-  "amount": "15000.00"
+  "transaction_id": "uuid",
+  "amount": "2000.00"
 }
 ```
+
+**Yanıt (204):** Gövde yok
+
+#### Ödeme Onayla
+
+```
+POST /api/v1/payments/{id}/confirm
+```
+
+**İstek:** Gövde yok
+
+**Yanıt (204):** Gövde yok
 
 ---
 
 ### 6.9 Satış (Sales)
 
-| Method | Path | İzin | Açıklama |
-|--------|------|------|----------|
-| `POST` | `/api/v1/sales/direct` | `SALES:CREATE` | Direkt satış |
-| `POST` | `/api/v1/sales/order-based` | `SALES:CREATE` | Siparişe dayalı satış |
-| `GET` | `/api/v1/sales/{id}` | `SALES:VIEW` | Detay |
-| `GET` | `/api/v1/sales?store_id=` | `SALES:VIEW` | Mağazaya göre listele |
-| `GET` | `/api/v1/sales?customer_id=` | `SALES:VIEW` | Müşteriye göre listele |
-| `POST` | `/api/v1/sales/{id}/returns` | `SALES:CREATE` | İade |
-| `POST` | `/api/v1/sales/cash-registers/{id}/open` | `SALES:APPROVE` | Kasa aç |
-| `POST` | `/api/v1/sales/cash-registers/{id}/close` | `SALES:APPROVE` | Kasa kapat |
-| `GET` | `/api/v1/sales/cash-registers/open` | `SALES:VIEW` | Açık kasa |
-| `GET` | `/api/v1/sales/summary/daily?store_id=&date=` | `SALES:VIEW` | Günlük özet |
+#### Direkt Satış Oluştur
 
-**Direkt satış:**
+```
+POST /api/v1/sales
+```
+
+**İstek:**
 ```json
-// POST /api/v1/sales/direct
 {
-  "store_id": "store_01",
-  "customer_id": "cust_01",
-  "cash_register_id": "reg_01",
-  "currency": "TRY",
-  "sold_at": "2024-06-15T11:30:00Z",
+  "store_id": "uuid",
+  "customer_id": "uuid",
+  "cash_register_id": "uuid",
   "lines": [
     {
-      "product_id": "prod_01",
-      "quantity": 25.0,
-      "unit": "kg",
-      "unit_price": "45.50",
-      "discount_rate": 0.0,
-      "vat_rate": 0.20
+      "product_id": "uuid",
+      "variant_id": "uuid",
+      "quantity": "2.00",
+      "unit": "ADET",
+      "unit_price": "150.00",
+      "currency": "TRY"
     }
   ],
   "payments": [
-    { "method": "CASH", "amount": "1365.00", "currency": "TRY" }
+    {
+      "method": "CASH",
+      "amount": "300.00",
+      "currency": "TRY"
+    }
   ]
+}
+```
+
+> `customer_id`, `cash_register_id`, `variant_id` opsiyoneldir.
+> Satır fiyatı `unit_price` (string) şeklindedir.
+
+**Yanıt (201):**
+```json
+{ "id": "uuid" }
+```
+
+#### Siparişe Bağlı Satış Oluştur
+
+```
+POST /api/v1/sales/from-order
+```
+
+**İstek:**
+```json
+{
+  "store_id": "uuid",
+  "order_id": "uuid",
+  "shipment_id": "uuid",
+  "payment": {
+    "method": "BANK_TRANSFER",
+    "amount": "1500.00",
+    "currency": "TRY"
+  }
+}
+```
+
+> `payment` tek nesne olarak verilir (dizi değil).
+
+**Yanıt (201):**
+```json
+{ "id": "uuid" }
+```
+
+#### İade Oluştur
+
+```
+POST /api/v1/sales/{id}/return
+```
+
+**İstek:**
+```json
+{
+  "lines": [
+    {
+      "sale_line_id": "uuid",
+      "quantity": "1.00",
+      "unit": "ADET"
+    }
+  ],
+  "refund_method": "CASH",
+  "reason": "Ürün kusurlu"
+}
+```
+
+**Yanıt (201):**
+```json
+{ "id": "uuid" }
+```
+
+#### Satış Listesi
+
+```
+GET /api/v1/sales
+```
+
+Query parametreleri: `?store_id={uuid}` VEYA `?customer_id={uuid}` (biri zorunlu)
+
+Ek filtreler (store_id ile): `?from=2024-01-01T00:00:00Z&to=2024-01-31T23:59:59Z`
+
+**Yanıt (200):**
+```json
+[
+  {
+    "id": "uuid",
+    "tenant_id": "uuid",
+    "store_id": "uuid",
+    "customer_id": "uuid",
+    "type": "DIRECT",
+    "source_order_id": null,
+    "source_shipment_id": null,
+    "status": "COMPLETED",
+    "lines": [
+      {
+        "id": "uuid",
+        "product_id": "uuid",
+        "variant_id": "uuid",
+        "quantity": "2.00",
+        "unit": "ADET",
+        "unit_price": "150.00",
+        "currency": "TRY"
+      }
+    ],
+    "payments": [
+      {
+        "method": "CASH",
+        "amount": "300.00",
+        "currency": "TRY"
+      }
+    ],
+    "subtotal": "300.00",
+    "vat_amount": "54.00",
+    "total_amount": "354.00",
+    "currency": "TRY",
+    "cash_register_id": "uuid",
+    "sold_at": "2024-01-15T09:00:00Z"
+  }
+]
+```
+
+#### Satış Detay
+
+```
+GET /api/v1/sales/{id}
+```
+
+**Yanıt (200):** Tek satış nesnesi
+
+---
+
+#### Kasa Oturumu Aç
+
+```
+POST /api/v1/sales/cash-registers/{id}/sessions/open
+```
+
+**İstek:**
+```json
+{
+  "opening_balance": "500.00",
+  "opened_by": "uuid"
+}
+```
+
+**Yanıt (204):** Gövde yok
+
+#### Kasa Oturumu Kapat
+
+```
+POST /api/v1/sales/cash-registers/{id}/sessions/close
+```
+
+**İstek:**
+```json
+{
+  "closing_balance": "750.00",
+  "closed_by": "uuid"
+}
+```
+
+**Yanıt (204):** Gövde yok
+
+#### Açık Kasa Sorgula
+
+```
+GET /api/v1/sales/cash-registers/open
+```
+
+Query parametresi: `?store_id={uuid}` (zorunlu)
+
+**Yanıt (200):**
+```json
+{
+  "id": "uuid",
+  "tenant_id": "uuid",
+  "store_id": "uuid",
+  "name": "Kasa 1",
+  "status": "OPEN",
+  "sessions": [
+    {
+      "id": "uuid",
+      "opened_at": "2024-01-15T08:00:00Z",
+      "closed_at": null,
+      "opening_balance": "500.00",
+      "closing_balance": null,
+      "cash_sales_total": "1200.00",
+      "card_sales_total": "800.00",
+      "return_total": "150.00",
+      "opened_by": "uuid",
+      "closed_by": null
+    }
+  ]
+}
+```
+
+#### Günlük Özet
+
+```
+GET /api/v1/sales/daily-summary
+```
+
+Query parametreleri: `?store_id={uuid}&date=2024-01-15`
+
+> `date` formatı: `YYYY-MM-DD`
+
+**Yanıt (200):**
+```json
+{
+  "tenant_id": "uuid",
+  "store_id": "uuid",
+  "date": "2024-01-15",
+  "sale_count": 42,
+  "total_amount": "15000.00",
+  "cash_amount": "8000.00",
+  "card_amount": "7000.00",
+  "currency": "TRY"
 }
 ```
 
@@ -713,334 +2081,736 @@ Tüm endpoint'ler `Authorization: Bearer <token>` ve `X-Tenant-ID: <uuid>` gerek
 
 ### 6.10 Depo (Warehouse)
 
-| Method | Path | İzin | Açıklama |
-|--------|------|------|----------|
-| `POST` | `/api/v1/warehouses` | `WAREHOUSE:CREATE` | Depo oluştur |
-| `GET` | `/api/v1/warehouses` | `WAREHOUSE:VIEW` | Depoları listele |
-| `GET` | `/api/v1/warehouses/{id}` | `WAREHOUSE:VIEW` | Depo detayı |
-| `PUT` | `/api/v1/warehouses/{id}` | `WAREHOUSE:UPDATE` | Depo güncelle |
-| `POST` | `/api/v1/warehouses/{id}/manager` | `WAREHOUSE:APPROVE` | Sorumlu ata |
-| `GET` | `/api/v1/warehouses/{id}/transfers` | `WAREHOUSE:VIEW` | Deponun transferleri |
-| `POST` | `/api/v1/transfers` | `WAREHOUSE:CREATE` | Transfer oluştur |
-| `GET` | `/api/v1/transfers` | `WAREHOUSE:VIEW` | Aktif transferler |
-| `GET` | `/api/v1/transfers/{id}` | `WAREHOUSE:VIEW` | Transfer detayı |
-| `POST` | `/api/v1/transfers/{id}/dispatch` | `WAREHOUSE:APPROVE` | Transferi gönder |
-| `POST` | `/api/v1/transfers/{id}/receive` | `WAREHOUSE:APPROVE` | Transfer kabul |
-| `POST` | `/api/v1/transfers/{id}/cancel` | `WAREHOUSE:APPROVE` | Transfer iptal |
+#### Depo Oluştur
 
-> `warehouse_type` geçerli değerleri: `CENTRAL`, `STORE`, `PRODUCTION`
+```
+POST /api/v1/warehouses
+```
 
-**Depo oluştur:**
+**İstek:**
 ```json
-// POST /api/v1/warehouses
 {
-  "code": "WH-001",
+  "code": "AD-01",
   "name": "Ana Depo",
-  "warehouse_type": "CENTRAL",
-  "street": "Sanayi Cad. No:1",
+  "manager_id": "uuid",
+  "street": "Sanayi Cad. No:5",
   "city": "İstanbul",
-  "district": "Ümraniye",
-  "postal": "34760",
+  "district": "Pendik",
+  "postal": "34906",
   "country": "TR"
 }
 ```
 
-**Transfer oluştur:**
+**Yanıt (201):**
 ```json
-// POST /api/v1/transfers
-{
-  "source_id": "wh_central",
-  "destination_id": "wh_store",
-  "notes": "Haftalık ikmal",
-  "lines": [
-    { "product_id": "prod_01", "quantity": 100.0, "unit": "kg" }
-  ]
-}
+{ "id": "uuid" }
 ```
 
-**Transfer kabul:**
-```json
-// POST /api/v1/transfers/{id}/receive
-{
-  "lines": [
-    { "line_id": "tl_01", "received_qty": 100.0 }
-  ]
-}
+#### Depo Listesi
+
+```
+GET /api/v1/warehouses
 ```
 
-> `line_id` değeri transfer oluşturma yanıtındaki satır ID'sinden alınır.
+**Yanıt (200):**
+```json
+[
+  {
+    "id": "uuid",
+    "tenant_id": "uuid",
+    "code": "AD-01",
+    "name": "Ana Depo",
+    "manager_id": "uuid",
+    "status": "active",
+    "address": {
+      "street": "Sanayi Cad. No:5",
+      "city": "İstanbul",
+      "district": "Pendik",
+      "postal": "34906",
+      "country": "TR"
+    },
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  }
+]
+```
+
+> Depo adres nesnesi `postal` kullanır (`postal_code` değil).
+
+#### Depo Detay
+
+```
+GET /api/v1/warehouses/{id}
+```
+
+**Yanıt (200):** Tek depo nesnesi
+
+#### Depo Güncelle
+
+```
+PUT /api/v1/warehouses/{id}
+```
+
+**İstek:** Oluşturma ile aynı format
+
+**Yanıt (204):** Gövde yok
 
 ---
 
-### 6.11 Sevkiyat (Shipment)
+#### Transfer Oluştur
 
-| Method | Path | İzin | Açıklama |
-|--------|------|------|----------|
-| `POST` | `/api/v1/shipments` | `SHIPMENT:CREATE` | Sevkiyat oluştur |
-| `GET` | `/api/v1/shipments/{id}` | `SHIPMENT:VIEW` | Detay |
-| `GET` | `/api/v1/shipments?order_id=` | `SHIPMENT:VIEW` | Siparişe göre |
-| `GET` | `/api/v1/shipments?waybill=` | `SHIPMENT:VIEW` | İrsaliye numarasına göre |
-| `GET` | `/api/v1/shipments?active=true` | `SHIPMENT:VIEW` | Aktif sevkiyatlar |
-| `POST` | `/api/v1/shipments/{id}/dispatch` | `SHIPMENT:APPROVE` | Yola çıkar |
-| `POST` | `/api/v1/shipments/{id}/deliver` | `SHIPMENT:APPROVE` | Teslim edildi |
-| `POST` | `/api/v1/shipments/{id}/cancel` | `SHIPMENT:APPROVE` | İptal et |
+```
+POST /api/v1/warehouses/transfers
+```
 
-> Oluşturma yanıtında ID alanı `shipment_id` olarak döner (diğer BC'lerden farklı olarak `id` değil).
-
-**Sevkiyat oluştur:**
+**İstek:**
 ```json
-// POST /api/v1/shipments
 {
-  "order_id": "ord_01",
-  "customer_id": "cust_01",
-  "warehouse_id": "wh_main",
-  "method": "OWN_VEHICLE",
-  "street": "Teslimat Cad. No:5",
-  "district": "Kadıköy",
-  "city": "İstanbul",
-  "postal_code": "34710",
-  "country": "TR",
-  "notes": "Sabah 08:00-12:00 arası",
+  "source_id": "uuid",
+  "destination_id": "uuid",
   "lines": [
     {
-      "order_line_id": "ol_01",
-      "product_id": "prod_01",
-      "quantity": 500.0,
-      "unit": "kg",
-      "reservation_id": "res_01"
+      "product_id": "uuid",
+      "quantity": "50.00",
+      "unit": "KG"
+    }
+  ],
+  "notes": "Şube transferi"
+}
+```
+
+**Yanıt (201):**
+```json
+{ "id": "uuid" }
+```
+
+#### Transfer Listesi
+
+```
+GET /api/v1/warehouses/transfers
+```
+
+Query parametresi: `?warehouse_id={uuid}`
+
+**Yanıt (200):** Transfer dizisi
+
+#### Transfer Detay
+
+```
+GET /api/v1/warehouses/transfers/{id}
+```
+
+**Yanıt (200):**
+```json
+{
+  "id": "uuid",
+  "tenant_id": "uuid",
+  "source_id": "uuid",
+  "destination_id": "uuid",
+  "status": "IN_TRANSIT",
+  "lines": [
+    {
+      "id": "uuid",
+      "product_id": "uuid",
+      "quantity": "50.00",
+      "unit": "KG",
+      "received_qty": "0.00",
+      "remaining": "50.00"
+    }
+  ],
+  "notes": "Şube transferi",
+  "dispatched_at": "2024-01-15T09:00:00Z",
+  "completed_at": null,
+  "created_at": "2024-01-15T08:00:00Z",
+  "updated_at": "2024-01-15T09:00:00Z"
+}
+```
+
+#### Transfer Sevk Et
+
+```
+POST /api/v1/warehouses/transfers/{id}/dispatch
+```
+
+**İstek:** Gövde yok
+
+**Yanıt (204):** Gövde yok
+
+#### Transfer Teslim Al
+
+```
+POST /api/v1/warehouses/transfers/{id}/receive
+```
+
+**İstek:**
+```json
+{
+  "lines": [
+    {
+      "line_id": "uuid",
+      "received_qty": "50.00"
     }
   ]
 }
 ```
 
-> `method` geçerli değerleri: `OWN_VEHICLE`, `CARGO`, `DEPOT_PICKUP`
+**Yanıt (204):** Gövde yok
 
-**Teslim et:**
-```json
-// POST /api/v1/shipments/{id}/deliver
-{ "delivered_by": "Ahmet Şoför" }
+---
+
+### 6.11 Sevkiyat (Shipment)
+
+#### Sevkiyat Oluştur
+
 ```
+POST /api/v1/shipments
+```
+
+**İstek:**
+```json
+{
+  "order_id": "uuid",
+  "warehouse_id": "uuid",
+  "method": "CARGO",
+  "waybill_number": "WB-2024-001",
+  "delivered_by": "Yurtiçi Kargo",
+  "lines": [
+    {
+      "order_line_id": "uuid",
+      "product_id": "uuid",
+      "variant_id": "uuid",
+      "quantity": "10.00",
+      "unit": "ADET"
+    }
+  ],
+  "cargo": {
+    "company": "Yurtiçi",
+    "tracking": "TR123456789",
+    "barcode": "BC001"
+  }
+}
+```
+
+> `variant_id` ve `cargo` opsiyoneldir.
+
+**Yanıt (201):**
+```json
+{ "shipment_id": "uuid" }
+```
+
+> Yanıt alanı `"shipment_id"` dir (`"id"` değil).
+
+#### Sevkiyat Listesi
+
+```
+GET /api/v1/shipments
+```
+
+Query parametresi: `?order_id={uuid}`
+
+**Yanıt (200):**
+```json
+[
+  {
+    "id": "uuid",
+    "order_id": "uuid",
+    "customer_id": "uuid",
+    "warehouse_id": "uuid",
+    "method": "CARGO",
+    "waybill_number": "WB-2024-001",
+    "status": "PENDING",
+    "delivered_by": "Yurtiçi Kargo",
+    "lines": [
+      {
+        "id": "uuid",
+        "order_line_id": "uuid",
+        "product_id": "uuid",
+        "variant_id": "uuid",
+        "quantity": "10.00",
+        "unit": "ADET"
+      }
+    ]
+  }
+]
+```
+
+#### Sevkiyat Detay
+
+```
+GET /api/v1/shipments/{id}
+```
+
+**Yanıt (200):** Tek sevkiyat nesnesi
+
+#### Sevkiyatı Kargoya Ver
+
+```
+POST /api/v1/shipments/{id}/dispatch
+```
+
+**İstek:** Boş `{}` veya gövde yok
+
+**Yanıt (204):** Gövde yok
+
+#### Sevkiyatı Teslim Et
+
+```
+POST /api/v1/shipments/{id}/deliver
+```
+
+**İstek:** Gövde yok
+
+**Yanıt (204):** Gövde yok
 
 ---
 
 ### 6.12 Üretim (Production)
 
-| Method | Path | İzin | Açıklama |
-|--------|------|------|----------|
-| `POST` | `/api/v1/production/orders` | `PRODUCTION:CREATE` | Üretim emri planla |
-| `POST` | `/api/v1/production/orders/{id}/assign-machine` | `PRODUCTION:UPDATE` | Makine ata |
-| `POST` | `/api/v1/production/orders/{id}/start` | `PRODUCTION:APPROVE` | Üretime başla |
-| `POST` | `/api/v1/production/orders/{id}/complete-stage` | `PRODUCTION:UPDATE` | Aşama tamamla |
-| `POST` | `/api/v1/production/orders/{id}/cancel` | `PRODUCTION:APPROVE` | İptal et |
-| `POST` | `/api/v1/production/molds/{id}/shots` | `PRODUCTION:UPDATE` | Kalıp atış sayısı kaydet |
-| `POST` | `/api/v1/production/molds/{id}/maintenance` | `PRODUCTION:APPROVE` | Kalıbı bakıma gönder |
-| `DELETE` | `/api/v1/production/molds/{id}/maintenance` | `PRODUCTION:APPROVE` | Bakımdan geri al |
+#### Üretim Emri Oluştur
 
-**Üretim emri planla:**
+```
+POST /api/v1/production/orders
+```
+
+**İstek:**
 ```json
-// POST /api/v1/production/orders
 {
-  "product_id": "prod_01",
-  "mold_id": "mold_01",
-  "warehouse_id": "wh_production",
-  "quantity": 500.0,
-  "quantity_unit": "adet",
-  "source": "MANUAL",
-  "planned_start": "2026-06-05T08:00:00Z",
+  "product_id": "uuid",
+  "variant_id": "uuid",
+  "quantity": "1000.00",
+  "unit": "KG",
+  "planned_start": "2024-01-20T08:00:00Z",
+  "planned_end": "2024-01-25T17:00:00Z",
+  "source_order_id": "uuid",
+  "source_line_id": "uuid"
+}
+```
+
+> `variant_id`, `source_order_id`, `source_line_id` opsiyoneldir.
+
+**Yanıt (201):**
+```json
+{ "id": "uuid" }
+```
+
+#### Üretim Emri Listesi
+
+```
+GET /api/v1/production/orders
+```
+
+Query parametreleri: `?status=PLANNED`, `?product_id={uuid}`
+
+**Yanıt (200):** Üretim emri dizisi
+
+#### Üretim Emri Detay
+
+```
+GET /api/v1/production/orders/{id}
+```
+
+**Yanıt (200):**
+```json
+{
+  "id": "uuid",
+  "tenant_id": "uuid",
+  "product_id": "uuid",
+  "variant_id": "uuid",
+  "quantity": "1000.00",
+  "unit": "KG",
+  "status": "PLANNED",
+  "planned_start": "2024-01-20T08:00:00Z",
+  "planned_end": "2024-01-25T17:00:00Z",
+  "actual_start": null,
+  "actual_end": null,
   "stages": [
-    { "name": "Enjeksiyon" },
-    { "name": "Kalite Kontrol" }
+    {
+      "id": "uuid",
+      "name": "Karıştırma",
+      "sequence": 1,
+      "machine_id": "uuid",
+      "status": "PENDING",
+      "planned_duration_minutes": 120
+    }
   ]
 }
 ```
 
-> `source` geçerli değerleri: `MANUAL`, `ORDER`
+#### Üretim Emrini Planla
 
-**Makine ata:**
-```json
-// POST /api/v1/production/orders/{id}/assign-machine
-{ "machine_id": "mch_01" }
+```
+POST /api/v1/production/orders/{id}/plan
 ```
 
-**Aşama tamamla:**
+**İstek:**
 ```json
-// POST /api/v1/production/orders/{id}/complete-stage
-{ "notes": "Enjeksiyon aşaması sorunsuz tamamlandı" }
+{
+  "stages": [
+    {
+      "name": "Karıştırma",
+      "sequence": 1,
+      "machine_id": "uuid",
+      "planned_duration_minutes": 120
+    }
+  ]
+}
 ```
 
-**Kalıp atış sayısı:**
-```json
-// POST /api/v1/production/molds/{id}/shots
-{ "count": 50 }
+> `machine_id` opsiyoneldir.
+
+**Yanıt (204):** Gövde yok
+
+#### Üretime Başla
+
+```
+POST /api/v1/production/orders/{id}/start
 ```
 
-**Bakımdan geri al:**
-```json
-// DELETE /api/v1/production/molds/{id}/maintenance
-{ "next_maintenance": "2026-09-01T00:00:00Z" }
+**İstek:** Gövde yok
+
+**Yanıt (204):** Gövde yok
+
+#### Üretime Duraklat
+
 ```
+POST /api/v1/production/orders/{id}/pause
+```
+
+**İstek:**
+```json
+{ "reason": "Makine arızası" }
+```
+
+**Yanıt (204):** Gövde yok
+
+#### Üretimi Tamamla
+
+```
+POST /api/v1/production/orders/{id}/complete
+```
+
+**İstek:**
+```json
+{ "actual_quantity": "980.00" }
+```
+
+**Yanıt (204):** Gövde yok
+
+#### Bakıma Gönder
+
+```
+POST /api/v1/production/orders/{id}/maintenance
+```
+
+**İstek:** Gövde yok
+
+**Yanıt (204):** Gövde yok
+
+#### Bakımdan Dön
+
+```
+POST /api/v1/production/orders/{id}/return-from-maintenance
+```
+
+**İstek:**
+```json
+{ "next_maintenance": "2024-06-01T08:00:00Z" }
+```
+
+> `next_maintenance` opsiyoneldir (RFC3339 tarih).
+
+**Yanıt (204):** Gövde yok
 
 ---
 
-### 6.13 Bildirim (Notification)
+### 6.13 Bildirimler (Notifications)
 
-| Method | Path | Açıklama |
-|--------|------|----------|
-| `GET` | `/api/v1/notifications?recipient_id=` | Bildirimleri listele |
-| `GET` | `/api/v1/notifications/unread-count?recipient_id=` | Okunmamış sayısı |
-| `POST` | `/api/v1/notifications/{id}/read` | Okundu işaretle |
-| `PUT` | `/api/v1/notifications/preferences` | Bildirim tercihleri güncelle |
+#### Bildirim Listesi
 
-**Bildirim tercihleri:**
-```json
-// PUT /api/v1/notifications/preferences
-{
-  "user_id": "usr_01",
-  "notif_type": "ORDER_CONFIRMED",
-  "channels": ["IN_APP"],
-  "enable": true
-}
 ```
+GET /api/v1/notifications
+```
+
+**Yanıt (200):**
+```json
+[
+  {
+    "id": "uuid",
+    "tenant_id": "uuid",
+    "user_id": "uuid",
+    "type": "STOCK_LOW",
+    "title": "Stok Azaldı",
+    "message": "Polipropilen stoğu eşiğin altına düştü.",
+    "is_read": false,
+    "created_at": "2024-01-15T09:00:00Z"
+  }
+]
+```
+
+#### Okunmamış Sayısı
+
+```
+GET /api/v1/notifications/unread-count
+```
+
+**Yanıt (200):**
+```json
+{ "count": 5 }
+```
+
+#### Bildirimi Okundu İşaretle
+
+```
+POST /api/v1/notifications/{id}/read
+```
+
+**İstek:** Boş nesne `{}`
+
+**Yanıt (204):** Gövde yok
+
+#### Tümünü Okundu İşaretle
+
+```
+POST /api/v1/notifications/read-all
+```
+
+**İstek:** Gövde yok
+
+**Yanıt (204):** Gövde yok
 
 ---
 
 ## 7. Platform API Endpoint'leri
 
-Base URL: `http://localhost:8080`
-**Authentication:** `Authorization: Bearer <PLATFORM_ADMIN_TOKEN>`
+Platform API, `http://localhost:8080` adresinde çalışır.
 
-> Platform API'si sadece sistem yöneticileri tarafından kullanılır. Tenant kullanıcıları bu API'ye erişemez.
+**Auth:** Tüm isteklerde statik admin token gereklidir:
+```
+Authorization: Bearer <PLATFORM_ADMIN_TOKEN>
+```
 
 ---
 
 ### 7.1 Tenant Yönetimi
 
-| Method | Path | Açıklama |
-|--------|------|----------|
-| `POST` | `/api/v1/tenants` | Tenant oluştur |
-| `GET` | `/api/v1/tenants?slug=&status=` | Listele |
-| `GET` | `/api/v1/tenants/{id}` | Detay |
-| `POST` | `/api/v1/tenants/{id}/activate` | Aktifleştir |
-| `POST` | `/api/v1/tenants/{id}/suspend` | Askıya al |
-| `POST` | `/api/v1/tenants/{id}/reactivate` | Reaktifleştir |
-| `POST` | `/api/v1/tenants/{id}/cancel` | İptal et |
+#### Tenant Oluştur
 
-**Tenant oluştur:**
+```
+POST /api/v1/platform/tenants
+```
+
+**İstek:**
 ```json
-// POST /api/v1/tenants
 {
   "company_name": "ABC Plastik A.Ş.",
-  "owner_email": "admin@abcplastik.com",
-  "trial_days": 14
+  "owner_email": "owner@abc.com",
+  "trial_days": 30
 }
-// Yanıt: { "tenant_id": "019e..." }
 ```
+
+**Yanıt (201):**
+```json
+{ "tenant_id": "uuid" }
+```
+
+#### Tenant Listesi
+
+```
+GET /api/v1/platform/tenants
+```
+
+**Yanıt (200):**
+```json
+[
+  {
+    "id": "uuid",
+    "company_name": "ABC Plastik A.Ş.",
+    "owner_email": "owner@abc.com",
+    "status": "ACTIVE",
+    "created_at": "2024-01-01T00:00:00Z"
+  }
+]
+```
+
+#### Tenant Detay
+
+```
+GET /api/v1/platform/tenants/{id}
+```
+
+**Yanıt (200):** Tek tenant nesnesi
+
+#### Tenant Askıya Al
+
+```
+POST /api/v1/platform/tenants/{id}/suspend
+```
+
+**İstek:**
+```json
+{ "reason": "Ödeme gecikti" }
+```
+
+**Yanıt (204):** Gövde yok
+
+#### Tenant Aktifleştir
+
+```
+POST /api/v1/platform/tenants/{id}/activate
+```
+
+**İstek:** Gövde yok
+
+**Yanıt (204):** Gövde yok
+
+#### Tenant'ı Yeniden Aktifleştir
+
+```
+POST /api/v1/platform/tenants/{id}/reactivate
+```
+
+**İstek:** Gövde yok
+
+**Yanıt (204):** Gövde yok
+
+#### Tenant İptal Et
+
+```
+POST /api/v1/platform/tenants/{id}/cancel
+```
+
+**İstek:**
+```json
+{ "reason": "Müşteri isteği" }
+```
+
+**Yanıt (204):** Gövde yok
 
 ---
 
-### 7.2 Abonelik Paketleri
+### 7.2 Abonelik (Subscription)
 
-| Method | Path | Açıklama |
-|--------|------|----------|
-| `POST` | `/api/v1/packages` | Paket oluştur |
-| `PUT` | `/api/v1/packages/{id}` | Güncelle |
-| `GET` | `/api/v1/packages?active=true` | Listele |
-| `GET` | `/api/v1/packages/{id}` | Detay |
+#### Abonelik Detay
 
-**Paket oluştur:**
+```
+GET /api/v1/platform/tenants/{id}/subscription
+```
+
+**Yanıt (200):**
 ```json
-// POST /api/v1/packages
 {
-  "name": "Pro",
-  "modules": ["INVENTORY", "ORDERS", "CATALOG", "CUSTOMERS", "PURCHASING", "ACCOUNTING", "PAYMENTS", "SALES"],
-  "max_users": 25,
-  "max_orders_per_month": 5000,
-  "monthly_price": "4999.00",
-  "yearly_price": "49990.00",
-  "currency": "TRY",
-  "is_active": true
+  "id": "uuid",
+  "tenant_id": "uuid",
+  "plan": "PROFESSIONAL",
+  "status": "ACTIVE",
+  "started_at": "2024-01-01T00:00:00Z",
+  "expires_at": "2025-01-01T00:00:00Z",
+  "trial_ends_at": null
 }
 ```
 
----
+#### Abonelik Yükselt
 
-### 7.3 Abonelik Yönetimi
+```
+POST /api/v1/platform/tenants/{id}/subscription/upgrade
+```
 
-| Method | Path | Açıklama |
-|--------|------|----------|
-| `GET` | `/api/v1/subscriptions/{tenantId}` | Abonelik getir |
-| `GET` | `/api/v1/subscriptions/{tenantId}/features` | Aktif modüller |
-| `POST` | `/api/v1/subscriptions/{id}/activate` | Aktifleştir |
-| `POST` | `/api/v1/subscriptions/{id}/change-package` | Paket değiştir |
-| `POST` | `/api/v1/subscriptions/{id}/renew` | Yenile |
-| `POST` | `/api/v1/subscriptions/{id}/past-due` | Gecikmiş işaretle |
-| `POST` | `/api/v1/subscriptions/{id}/cancel` | İptal et |
-
+**İstek:**
 ```json
-// POST /api/v1/subscriptions/{id}/activate
-{ "billing_cycle": "monthly" }
-
-// GET /api/v1/subscriptions/{tenantId}/features
-{ "modules": ["INVENTORY", "ORDERS", "CATALOG"] }
+{ "plan": "ENTERPRISE" }
 ```
+
+**Yanıt (204):** Gövde yok
+
+#### Abonelik Uzat
+
+```
+POST /api/v1/platform/tenants/{id}/subscription/extend
+```
+
+**İstek:**
+```json
+{ "days": 30 }
+```
+
+**Yanıt (204):** Gövde yok
 
 ---
 
-### 7.4 Faturalama
+### 7.3 Faturalama (Billing)
 
-| Method | Path | Açıklama |
-|--------|------|----------|
-| `POST` | `/api/v1/billing/payments` | Ödeme kaydet |
-| `POST` | `/api/v1/billing/payments/{id}/confirm` | Onayla |
-| `POST` | `/api/v1/billing/payments/{id}/refund` | İade et |
-| `GET` | `/api/v1/billing/payments/pending` | Bekleyen ödemeler |
-| `POST` | `/api/v1/billing/invoices/{id}/cancel` | Fatura iptal |
-| `GET` | `/api/v1/billing/invoices/{id}` | Detay |
-| `GET` | `/api/v1/billing/invoices?tenant_id=&overdue=true` | Listele |
+#### Fatura Listesi
+
+```
+GET /api/v1/platform/tenants/{id}/invoices
+```
+
+**Yanıt (200):**
+```json
+[
+  {
+    "id": "uuid",
+    "tenant_id": "uuid",
+    "subscription_id": "uuid",
+    "amount": "2999.00",
+    "currency": "TRY",
+    "status": "UNPAID",
+    "due_date": "2024-02-01T00:00:00Z",
+    "issued_at": "2024-01-01T00:00:00Z"
+  }
+]
+```
+
+#### Ödeme Kaydet
+
+```
+POST /api/v1/platform/payments
+```
+
+**İstek:**
+```json
+{
+  "tenant_id": "uuid",
+  "subscription_id": "uuid",
+  "method": "BANK_TRANSFER",
+  "amount": "2999.00",
+  "currency": "TRY",
+  "reference": "EFT-2024-001"
+}
+```
+
+**Yanıt (201):**
+```json
+{ "id": "uuid" }
+```
+
+#### Ödeme Onayla
+
+```
+POST /api/v1/platform/payments/{id}/confirm
+```
+
+**İstek:**
+```json
+{ "confirmed_by": "admin@platform.com" }
+```
+
+**Yanıt (204):** Gövde yok
 
 ---
 
-## Ek Notlar
+## Sık Yapılan Hatalar
 
-### Para Tutarları
-
-Tüm para tutarları **ondalıklı string** olarak gönderilir ve alınır. Asla `float` kullanmayın:
-
-```typescript
-// Doğru
-const amount = "1250.50";
-
-// Yanlış — ondalık kayması riski
-const amount = 1250.50;
-```
-
-### Tarih Formatı
-
-Tüm tarihler **RFC 3339 / ISO 8601 UTC** formatında:
-
-```
-"2024-06-15T14:30:00Z"
-```
-
-### Enum Değerleri
-
-Tüm enum alanları (status, method, source, type, warehouse_type vb.) büyük harf kullanır:
-
-```
-MANUAL  CASH  CHECK  BANK_TRANSFER  CENTRAL  STORE  OWN_VEHICLE  …
-```
-
-### Sayfalama
-
-Şu an listeleme endpoint'leri sabit limit döner. Gelecekte standart format eklenecek:
-
-```
-GET /api/v1/orders?limit=20&offset=0
-```
-
-### Swagger UI
-
-Her API'nin interaktif dokümantasyonuna erişebilirsiniz:
-
-- Tenant API: `http://localhost:8081/swagger/`
-- Platform API: `http://localhost:8080/swagger/`
+| Hata | Neden | Çözüm |
+|------|-------|-------|
+| `401 Unauthorized` | Token eksik veya süresi dolmuş | Yeniden login olup token alın |
+| `400 Bad Request` | Zorunlu alan eksik veya format yanlış | İstek gövdesini kontrol edin |
+| `404 Not Found` | Kayıt bulunamadı | UUID'yi ve tenant_id'yi doğrulayın |
+| `422 Unprocessable Entity` | İş kuralı ihlali | `error` alanındaki mesajı kullanıcıya gösterin |
+| `403 Forbidden` | Yetersiz izin | Kullanıcının rolünü kontrol edin |
+| Order alanları camelCase | Order BC camelCase kullanır | `customerId`, `warehouseId` vb. |
+| Katalog `price_amount` float | Diğer para alanları string'ken bu float | `125.50` (tırnak yok) |
+| Sevkiyat yanıtı `shipment_id` | Diğer endpoint'ler `id` döner | `response.shipment_id` kullanın |
+| Depo adresi `postal` | Diğer adresler `postal_code` kullanır | `address.postal` kullanın |
+| Satış `unit_price` | Sipariş satırı `unitPriceAmount` kullanır | Satış satırında `unit_price` (string) |
+| Muhasebe bakiye dizi | `balance` endpoint dizi döner | `response[0].net_balance` şeklinde erişin |

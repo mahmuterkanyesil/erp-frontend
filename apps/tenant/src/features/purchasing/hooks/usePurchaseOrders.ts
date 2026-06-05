@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next"
 import { purchasingService } from "@erp/api-client"
 import type {
   CreatePurchaseOrderRequest,
+  UpdatePurchaseOrderRequest,
   AddPurchaseOrderLineRequest,
   CreateGoodsReceiptRequest,
 } from "@erp/api-client"
@@ -29,6 +30,24 @@ export function usePurchaseOrder(id: string) {
     queryFn: () => purchasingService.getOrder(id),
     staleTime: 30_000,
     enabled: !!id,
+  })
+}
+
+export function useUpdatePurchaseOrder(orderId: string, onSuccess?: () => void) {
+  const queryClient = useQueryClient()
+  const { t } = useTranslation("purchasing")
+
+  return useMutation({
+    mutationFn: (body: UpdatePurchaseOrderRequest) => purchasingService.updateOrder(orderId, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.detail(orderId) })
+      queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.all })
+      toast.success(t("successUpdatedOrder"))
+      onSuccess?.()
+    },
+    onError: () => {
+      toast.error(t("title"))
+    },
   })
 }
 

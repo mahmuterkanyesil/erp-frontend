@@ -14,6 +14,7 @@ export {
   usePurchaseOrders,
   usePurchaseOrder,
   useCreatePurchaseOrder,
+  useUpdatePurchaseOrder,
   useAddOrderLine,
   useConfirmOrder,
   useCancelOrder,
@@ -26,6 +27,7 @@ export {
   useRawMaterials,
   useRawMaterial,
   useCreateRawMaterial,
+  useUpdateRawMaterial,
   useUpdatePreferredSupplier,
 } from "./hooks/useRawMaterials"
 

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next"
 import { purchasingService } from "@erp/api-client"
 import type {
   CreateRawMaterialRequest,
+  UpdateRawMaterialRequest,
   UpdatePreferredSupplierRequest,
 } from "@erp/api-client"
 
@@ -27,6 +28,25 @@ export function useRawMaterial(id: string) {
     queryFn: () => purchasingService.getMaterial(id),
     staleTime: 30_000,
     enabled: !!id,
+  })
+}
+
+export function useUpdateRawMaterial(materialId: string, onSuccess?: () => void) {
+  const queryClient = useQueryClient()
+  const { t } = useTranslation("purchasing")
+
+  return useMutation({
+    mutationFn: (body: UpdateRawMaterialRequest) =>
+      purchasingService.updateMaterial(materialId, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: rawMaterialKeys.detail(materialId) })
+      queryClient.invalidateQueries({ queryKey: rawMaterialKeys.list() })
+      toast.success(t("successUpdatedMaterial"))
+      onSuccess?.()
+    },
+    onError: () => {
+      toast.error(t("title"))
+    },
   })
 }
 

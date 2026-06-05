@@ -1,6 +1,6 @@
 export { CustomerStatusBadge } from "./components/CustomerStatusBadge"
 export { CustomerTable } from "./components/CustomerTable"
 export { CustomerForm } from "./components/CustomerForm"
-export { customerKeys, useCustomers, useCustomer, useCustomerOrders, useCustomerDefaultAddress, useCustomerAccount, useCreateCustomer, useUpdateCustomer } from "./hooks/useCustomers"
+export { customerKeys, useCustomers, useCustomer, useCustomerOrders, useCustomerDefaultAddress, useCustomerAccount, useCreateCustomer, useUpdateCustomer, useUpdateCustomerRole } from "./hooks/useCustomers"
 export { customerSchema } from "./schemas/customer.schema"
 export type { CustomerFormValues } from "./schemas/customer.schema"

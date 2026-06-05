@@ -125,7 +125,7 @@ export interface ProductVariant {
 
 // ─── Customers (Partner model) ───────────────────────────────────────────────
 
-export type PartnerType = "COMPANY" | "INDIVIDUAL"
+export type PartnerType = "company" | "individual"
 export type CustomerSegment = "A" | "B" | "C"
 
 export interface CustomerAddress {
@@ -396,5 +396,36 @@ export interface CreateRawMaterialRequest {
 
 export interface UpdatePreferredSupplierRequest {
   supplier_id: string
+}
+
+export interface UpdatePurchaseOrderRequest {
+  supplier_id?: string
+  warehouse_id?: string
+  expected_date?: string
+  notes?: string
+}
+
+export interface UpdateRawMaterialRequest {
+  name?: string
+  code?: string
+  material_type?: string
+  unit?: string
+  min_order_qty?: number
+  min_order_qty_unit?: string
+  lead_time_days?: number
+}
+
+export interface UpdateSupplierRoleRequest {
+  payment_term_days?: number
+  lead_time_days?: number
+  currency?: string
+}
+
+export interface UpdateCustomerRoleRequest {
+  segment?: CustomerSegment
+  credit_amount?: string
+  credit_currency?: string
+  payment_term_days?: number
+  discount_rate?: string
 }
 

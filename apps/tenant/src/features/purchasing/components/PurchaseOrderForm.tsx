@@ -11,12 +11,14 @@ import {
 interface Props {
   suppliers: SelectOption[]
   warehouses: SelectOption[]
+  defaultValues?: Partial<CreatePurchaseOrderValues>
+  submitLabel?: string
   onSubmit: (values: CreatePurchaseOrderValues) => void
   isLoading?: boolean
   onCancel?: () => void
 }
 
-export function PurchaseOrderForm({ suppliers, warehouses, onSubmit, isLoading, onCancel }: Props) {
+export function PurchaseOrderForm({ suppliers, warehouses, defaultValues, submitLabel, onSubmit, isLoading, onCancel }: Props) {
   const { t } = useTranslation("purchasing")
   const { t: tc } = useTranslation("common")
 
@@ -33,7 +35,7 @@ export function PurchaseOrderForm({ suppliers, warehouses, onSubmit, isLoading, 
     formState: { errors },
   } = useForm<CreatePurchaseOrderValues>({
     resolver: zodResolver(createPurchaseOrderSchema),
-    defaultValues: { source: "MANUAL" },
+    defaultValues: { source: "MANUAL", ...defaultValues },
   })
 
   return (
@@ -79,7 +81,7 @@ export function PurchaseOrderForm({ suppliers, warehouses, onSubmit, isLoading, 
           </Button>
         )}
         <Button type="submit" loading={isLoading}>
-          {tc("create")}
+          {submitLabel ?? tc("create")}
         </Button>
       </div>
     </form>

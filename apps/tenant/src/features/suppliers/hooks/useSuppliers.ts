@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 import { supplierService } from "@erp/api-client"
-import type { CreateSupplierRequest, UpdateSupplierRequest } from "@erp/api-client"
+import type { CreateSupplierRequest, UpdateSupplierRequest, UpdateSupplierRoleRequest } from "@erp/api-client"
 
 export const supplierKeys = {
   all: ["suppliers"] as const,
@@ -60,6 +60,23 @@ export function useCreateSupplier(onSuccess?: (id: string) => void) {
       queryClient.invalidateQueries({ queryKey: supplierKeys.all })
       toast.success(t("successCreated"))
       onSuccess?.(supplier.id)
+    },
+    onError: () => {
+      toast.error(t("title"))
+    },
+  })
+}
+
+export function useUpdateSupplierRole(id: string, onSuccess?: () => void) {
+  const queryClient = useQueryClient()
+  const { t } = useTranslation("suppliers")
+
+  return useMutation({
+    mutationFn: (body: UpdateSupplierRoleRequest) => supplierService.updateSupplierRole(id, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: supplierKeys.detail(id) })
+      toast.success(t("successUpdated"))
+      onSuccess?.()
     },
     onError: () => {
       toast.error(t("title"))

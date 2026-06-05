@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 import { customerService } from "@erp/api-client"
-import type { CreateCustomerRequest, UpdateCustomerRequest } from "@erp/api-client"
+import type { CreateCustomerRequest, UpdateCustomerRequest, UpdateCustomerRoleRequest } from "@erp/api-client"
 
 export const customerKeys = {
   all: ["customers"] as const,
@@ -68,6 +68,23 @@ export function useCreateCustomer(onSuccess?: (id: string) => void) {
       queryClient.invalidateQueries({ queryKey: customerKeys.all })
       toast.success(t("successCreated"))
       onSuccess?.(customer.id)
+    },
+    onError: () => {
+      toast.error(t("title"))
+    },
+  })
+}
+
+export function useUpdateCustomerRole(id: string, onSuccess?: () => void) {
+  const queryClient = useQueryClient()
+  const { t } = useTranslation("customers")
+
+  return useMutation({
+    mutationFn: (body: UpdateCustomerRoleRequest) => customerService.updateCustomerRole(id, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: customerKeys.detail(id) })
+      toast.success(t("successUpdated"))
+      onSuccess?.()
     },
     onError: () => {
       toast.error(t("title"))
